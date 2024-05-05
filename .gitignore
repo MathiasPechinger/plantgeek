@@ -1,0 +1,6 @@
+Adafruit_Python_DHT-1.4.1/
+build/
+old/
+venv/
+.lgd-nfy0
+ip_cam/node_modules/

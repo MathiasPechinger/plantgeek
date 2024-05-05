@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Stream</title>
+</head>
+<body>
+    <img id="webcam" alt="Webcam Stream">
+    <script>
+    const ws = new WebSocket('ws://127.0.0.1:8080');
+    ws.onmessage = function(event) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            document.getElementById('webcam').src = reader.result;
+        };
+        reader.readAsDataURL(new Blob([event.data]));
+    };
+    </script>
+
+    </body>
+</html>
