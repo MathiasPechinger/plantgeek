@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, abort
 import mysql.connector
 import datetime
 import os
@@ -8,7 +8,35 @@ import sched
 import threading
 import psutil
 
+import subprocess
+from functools import wraps
+
+
+
 app = Flask(__name__)
+
+
+
+# Ensure only authorized users can access the route
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not (auth.username == 'admin' and auth.password == 'admin_password'):
+            return abort(401)  # You can implement a more secure authentication mechanism
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/reboot', methods=['POST'])
+@requires_auth
+def reboot():
+    try:
+        subprocess.run(['sudo', '/sbin/reboot'], check=True)
+        return jsonify({'status': 'Reboot initiated'})
+    except subprocess.CalledProcessError as e:
+        return jsonify({'error': str(e)}), 500
+
+
 
 light_on_time = datetime.time(8, 0)  # default light on time
 light_off_time = datetime.time(22, 0)  # default light off time
@@ -41,9 +69,11 @@ db_config = {
     'database': 'sensor_data'
 }
 
-users = {
-    "wolf": "1234"
-}
+# users = {
+#     "wolf": "1234"
+# }
+
+
 
 
 @app.route('/set-light-times', methods=['POST'])

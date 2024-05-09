@@ -290,7 +290,7 @@
             });
         }
 
-
+        fetchData(); // Fetch data immediately
         setInterval(fetchData, 3000);
 
         fetchDataNow();
@@ -300,5 +300,26 @@
         setInterval(fetchCPUTemperature, 3000);
 
     </script>
+
+    <button onclick="rebootSystem()">Reboot System</button>
+
+    <script>
+        function rebootSystem() {
+            if (confirm('Are you sure you want to reboot the system?')) {
+                fetch('/reboot', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('admin:admin_password'),  // Update with your actual authentication mechanism
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => alert('Reboot initiated.'))
+                .catch(error => console.error('Error:', error));
+            }
+        }
+    </script>
+
+
 </body>
 </html>
