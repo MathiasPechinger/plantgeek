@@ -6,6 +6,7 @@ from gpiozero import OutputDevice
 import time
 import sched
 import threading
+import psutil
 
 app = Flask(__name__)
 
@@ -39,6 +40,11 @@ db_config = {
     'password': 'aligator3',
     'database': 'sensor_data'
 }
+
+users = {
+    "wolf": "1234"
+}
+
 
 @app.route('/set-light-times', methods=['POST'])
 def set_light_times():
@@ -85,29 +91,55 @@ def light_control():
 def index():
     return render_template('index.html')
 
+@app.route('/data/rpi-temperature')
+def cpu_temp():
+    temps = psutil.sensors_temperatures()
+    return jsonify(temps)
+
 @app.route('/data')
 def data():
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
-    end_time = datetime.datetime.now()
-    start_time = end_time - datetime.timedelta(seconds=24*3600)
-    # query = "SELECT timestamp, temperature_c, humidity, eco2, tvoc FROM measurements WHERE timestamp BETWEEN %s AND %s"
-   
-    # cursor.execute(query, (start_time, end_time))
-   
+       
    
     query = """
     SELECT temperature_c, humidity, eco2, tvoc
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    AND (MINUTE(timestamp) % 10 = 0 AND SECOND(timestamp) = 0);
+    AND MINUTE(timestamp) % 10 = 0;
     """
 
     cursor.execute(query)
     
     results = cursor.fetchall()
     
-    print(results)
+    # print(results)
+    
+    cursor.close()
+    conn.close()
+
+    return jsonify(results)
+
+@app.route('/data/now')
+def data_now():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+       
+   
+    query = """
+    SELECT temperature_c, humidity, eco2, tvoc
+    FROM measurements
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    AND MINUTE(timestamp) % 10 = 0
+    ORDER BY timestamp DESC
+    LIMIT 1;
+    """
+
+    cursor.execute(query)
+    
+    results = cursor.fetchall()
+    
+    # print(results)
     
     cursor.close()
     conn.close()

@@ -14,7 +14,7 @@
         <button onclick="updateTimespan()">Update Timespan</button>
     </div>
 
-    <iframe id="webcamStream" width="700" height="500" src="http://127.0.0.1:8080"></iframe> <!-- Replace 'your-camera-ip-address' with your actual camera IP -->
+    <iframe id="webcamStream" width="700" height="500" src="http://192.168.2.163:8080"></iframe> <!-- Replace 'your-camera-ip-address' with your actual camera IP -->
 
     <h1>Light Control Dashboard</h1>
     <div>
@@ -35,17 +35,53 @@
         <button onclick="toggleLight(false)">Turn Light OFF</button>
     </div>
 
+    <div>
+        <h1>Raspberry Pi Temperatures</h1>
+        <p>CPU Temperature: <span id="cpu_temperature"></span></p>
+        <p>RP1 ADC Temperature: <span id="rp1_adc_temperature"></span></p>
+    </div>
+
+    <script>
+        function updateTemperatureDisplay() {
+            const cpuTemperature = document.getElementById('cpu_temperature');
+            const rp1AdcTemperature = document.getElementById('rp1_adc_temperature');
+            const cpuTemperatureValue = parseFloat(cpuTemperature.innerText);
+            const rp1AdcTemperatureValue = parseFloat(rp1AdcTemperature.innerText);
+
+            if (cpuTemperatureValue > 80) {
+                cpuTemperature.style.color = 'red';
+                cpuTemperature.style.fontWeight = 'bold';
+            } else {
+                cpuTemperature.style.color = 'inherit';
+                cpuTemperature.style.fontWeight = 'normal';
+            }
+
+            if (rp1AdcTemperatureValue > 80) {
+                rp1AdcTemperature.style.color = 'red';
+                rp1AdcTemperature.style.fontWeight = 'bold';
+            } else {
+                rp1AdcTemperature.style.color = 'inherit';
+                rp1AdcTemperature.style.fontWeight = 'normal';
+            }
+        }
+
+        setInterval(updateTemperatureDisplay, 3000);
+    </script>
 
     <h1>Temperature (C)</h1>
+    <p>Current Temperature: <span id="actual-temperature"></span></p>
     <canvas id="temperatureChart" width="400" height="100"></canvas>
 
     <h1>Humidity (%)</h1>
+    <p>Current Humidity: <span id="actual-humidity"></span></p>
     <canvas id="humidityChart" width="400" height="100"></canvas>
 
     <h1>eCO2 (ppm)</h1>
+    <p>Current eCO2: <span id="actual-eco2"></span></p>
     <canvas id="eco2Chart" width="400" height="100"></canvas>
 
     <h1>TVOC (ppb)</h1>
+    <p>Current TVOC: <span id="actual-tvoc"></span></p>
     <canvas id="tvocChart" width="400" height="100"></canvas>
 
     <script>
@@ -76,7 +112,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify({state: state}),
                 success: function(response) {
-                    console.log("Response: " + JSON.stringify(response));
+                    // console.log("Response: " + JSON.stringify(response));
                 },
                 error: function(xhr, status, error) {
                     console.log("Error: " + error);
@@ -172,7 +208,7 @@
         }
 
         function updateChart(chart, data) {
-            console.log("Updating chart with data:", data);
+            // console.log("Updating chart with data:", data);
 
             if (data[0].length === 0) {
                 console.log("Data array is empty, resetting chart data.");
@@ -190,11 +226,46 @@
             chart.update(); // Redraw the chart
         }
 
+        function fetchCPUTemperature() {
+            $.ajax({
+                url: '/data/rpi-temperature',
+                success: function(data) {
+                    if (data.cpu_thermal && data.cpu_thermal.length > 0) {
+                        // console.log("CPU Temperature:", data.cpu_thermal[0][1]);
+                        // console.log("ADC Temperature:", data.rp1_adc[0][1]);
+                        document.getElementById('cpu_temperature').innerText = data.cpu_thermal[0][1].toFixed(2);  // Format to 2 decimal places
+                        document.getElementById('rp1_adc_temperature').innerText = data.rp1_adc[0][1].toFixed(2);  // Format to 2 decimal places
+                    } else {
+                        console.log("CPU temperature data is not available.");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Failed to fetch CPU temperature:", error);
+                }
+            });
+        }
+
+        function fetchDataNow() {
+            $.ajax({
+                url: '/data/now',
+                success: function(data) {
+                    // console.log("Received latest data:", data);
+                    document.getElementById('actual-temperature').innerText = data[0][0].toFixed(2);
+                    document.getElementById('actual-humidity').innerText = data[0][1].toFixed(2);
+                    document.getElementById('actual-eco2').innerText = data[0][2].toFixed(2);
+                    document.getElementById('actual-tvoc').innerText = data[0][3].toFixed(2);
+                },
+                error: function(xhr, status, error) {
+                    console.error("Failed to fetch latest data:", error);
+                }
+            });
+        }
+
         function fetchData() {
             $.ajax({
                 url: '/data?timespan=' + timespan,
                 success: function(data) {
-                    console.log("Received data for charts:", data);  // Debug print
+                    // console.log("Received data for charts:", data);  // Debug print
                     if (data && data.length > 0) {
                         var temps = data.map(d => d[0]);
                         var humids = data.map(d => d[1]);
@@ -221,6 +292,13 @@
 
 
         setInterval(fetchData, 3000);
+
+        fetchDataNow();
+        setInterval(fetchDataNow, 3000);
+
+        fetchCPUTemperature();
+        setInterval(fetchCPUTemperature, 3000);
+
     </script>
 </body>
 </html>
