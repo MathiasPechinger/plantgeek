@@ -80,6 +80,7 @@ co2valve = OutputDevice(27)
 fan = PWMOutputDevice(12)
 
 
+
 class Fridge:
     
     
@@ -107,6 +108,13 @@ class Fridge:
 
 fridge = Fridge(OutputDevice(16)) # GPIO pin 16, where fridge is connected
 
+@app.route('/fridge_state')
+def fridge_state():
+    results = fridge.is_on    
+    # print(results)
+
+    return jsonify(results)
+
 def get_current_temp():
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()      
@@ -123,7 +131,7 @@ def get_current_temp():
     cursor.execute(query)
     results = cursor.fetchall()
     
-    print(results[0][0])
+    # print(results[0][0])
     
     cursor.close()
     conn.close()

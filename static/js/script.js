@@ -227,6 +227,23 @@ function fetchDataNow() {
     });
 }
 
+function fetchFridgeState() {
+    $.ajax({
+        url: '/fridge_state',
+        success: function(data) {
+            // console.log("Received latest data:", data);
+            document.getElementById('fridge-state').innerText = data;
+            if (data == "true")
+                document.getElementById('fridge-progress').setAttribute('aria-valuenow', '100');
+            else
+                document.getElementById('fridge-progress').setAttribute('aria-valuenow', '0');
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to fetch latest data:", error);
+        }
+    });
+}
+
 function fetchData() {
     $.ajax({
         url: '/data?timespan=' + timespan,
@@ -276,6 +293,9 @@ setInterval(fetchData, 3000);
 
 fetchDataNow();
 setInterval(fetchDataNow, 3000);
+
+fetchFridgeState()
+setInterval(fetchFridgeState, 3000);
 
 fetchCPUTemperature();
 setInterval(fetchCPUTemperature, 3000);
