@@ -3,14 +3,18 @@ import mysql.connector
 import datetime
 import os
 from gpiozero import OutputDevice
+from gpiozero import PWMOutputDevice
 import time
 import sched
 import threading
 import psutil
+import logging
 
 import subprocess
 from functools import wraps
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 
 app = Flask(__name__)
@@ -42,7 +46,7 @@ light_on_time = datetime.time(8, 0)  # default light on time
 light_off_time = datetime.time(22, 0)  # default light off time
 
 # Scheduler
-scheduler = sched.scheduler(time.time, time.sleep)
+scheduler_light = sched.scheduler(time.time, time.sleep)
 
 def turn_light_on():
     light.off()
@@ -56,14 +60,12 @@ def open_co2_valve():
 def close_co2_valve():
     co2valve.on()
     
+    
 def set_fan_speed(speed):
     fan.on()
-    fan.value = speed
-
-light = OutputDevice(17)
-co2valve = OutputDevice(27)
-fan = OutputDevice(12)
-fridge = OutputDevice(16)
+    pwm_value = float(float(speed) / 100)
+    # print(pwm_value)
+    fan.value = pwm_value
 
 # Database connection parameters
 db_config = {
@@ -73,10 +75,68 @@ db_config = {
     'database': 'sensor_data'
 }
 
-# users = {
-#     "wolf": "1234"
-# }
+light = OutputDevice(17)
+co2valve = OutputDevice(27)
+fan = PWMOutputDevice(12)
 
+
+class Fridge:
+    
+    
+    def __init__(self, output_device):
+        self.is_on = False
+        self.off_time = None
+        self.output_device = output_device
+
+    def switch_on(self):
+        minimum_off_time = 60  # 1 minute
+        if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
+            self.is_on = True
+            self.off_time = None
+            self.output_device.off()
+            print("Fridge switched on.")
+        else:
+            print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
+            remaining_time = minimum_off_time - (datetime.datetime.now() - self.off_time).total_seconds()
+            print(f"Please wait for {remaining_time} seconds before switching on again.")
+
+    def switch_off(self):
+        self.is_on = False
+        self.off_time = datetime.datetime.now()
+        self.output_device.on()
+
+fridge = Fridge(OutputDevice(16)) # GPIO pin 16, where fridge is connected
+
+def get_current_temp():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()      
+   
+    query = """
+    SELECT temperature_c
+    FROM measurements
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    AND MINUTE(timestamp) % 10 = 0
+    ORDER BY timestamp DESC
+    LIMIT 1;
+    """
+
+    cursor.execute(query)
+    results = cursor.fetchall()
+    
+    print(results[0][0])
+    
+    cursor.close()
+    conn.close()
+    return results[0][0]
+
+def control_fridge(sc):
+    temp = get_current_temp()
+    if temp > 25:
+        fridge.switch_on()  # You need to define this function
+    elif temp < 22:
+        fridge.switch_off()  # You need to define this function
+    # schedule the next check in 60 seconds
+    sc.enter(5, 1, control_fridge, (sc,))
 
 
 
@@ -103,7 +163,7 @@ def check_time_and_control_light():
         turn_light_off()
         print("stopping the sun")
     # Schedule the next check in 60 seconds (we should make this faster ;) )
-    scheduler.enter(60, 1, check_time_and_control_light)
+    scheduler_light.enter(60, 1, check_time_and_control_light)
 
 @app.route('/light/control', methods=['POST'])
 def light_control():
@@ -154,7 +214,7 @@ def data():
 
     return jsonify(results)
 
-@app.route('/fanspeed', methods=['POST'])
+@app.route('/setFanSpeed', methods=['POST'])
 def fan_speed():
     if not request.is_json:
         return jsonify({'error': 'Missing JSON in request'}), 400
@@ -162,7 +222,6 @@ def fan_speed():
     speed = request.get_json().get('speed')
     if speed is None:
         return jsonify({'error': 'Missing required parameter'}), 400
-
     set_fan_speed(speed)
 
     return jsonify({'status': 'Fan speed set to {}'.format(speed)})
@@ -193,22 +252,41 @@ def data_now():
 
     return jsonify(results)
 
-def run_scheduler():
-    print("starting scheduler")
-    scheduler.run()
+def run_scheduler_light():
+    print("starting light scheduler")
+    scheduler_light.run()
     print("Scheduler stopped running")
+    
+def run_scheduler_fridge():
+    print("starting light scheduler")
+    scheduler_fridge.run()
+    print("Scheduler stopped running")
+    
+scheduler_fridge = sched.scheduler(time.time, time.sleep)
 
 if __name__ == '__main__':
     print("Entering main")
-    scheduler.enter(0, 1, check_time_and_control_light)
+    scheduler_light.enter(0, 1, check_time_and_control_light)
+    scheduler_fridge.enter(0, 1, control_fridge, (scheduler_fridge,))
+    
     print("switch light off")
     close_co2_valve()
     turn_light_off()
     
-    set_fan_speed(0.5)
+    # set_fan_speed(0.5)
+    fan.on()
+    fan.value = 0.4
+    fridge.switch_off()
     
-    # Start scheduler in a separate thread
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.start()
+    # Start schedulers in a separate thread
+    scheduler_thread_fridge = threading.Thread(target=run_scheduler_fridge)
+    scheduler_thread_fridge.start()
+    
+    scheduler_thread_light = threading.Thread(target=run_scheduler_light)
+    scheduler_thread_light.start()
+    
     print("app.run")
     app.run(debug=False, host='0.0.0.0')
+    
+    
+    

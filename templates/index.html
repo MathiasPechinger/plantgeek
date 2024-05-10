@@ -19,17 +19,27 @@
 <body>
     <h1 class="text-center mb-4">Sensor Dashboard</h1>
 
+    <div class="card">
+        <div class="card-header">Live Stream</div>
+
+        <iframe id="webcamStream" width="700" height="500" src="http://192.168.2.163:8080"></iframe> 
+    </div>
+
     <div class="controls">
         <input id="timespan" type="number" value="120" class="form-control" placeholder="Enter timespan in seconds" style="width: auto; display: inline-block;">
         <button onclick="updateTimespan()" class="btn btn-primary">Update Timespan</button>
     </div>
 
     <div class="card">
-        <div class="card-header">Webcam Stream</div>
+        <div class="card-header">Fan Control</div>
         <div class="card-body">
-            <iframe id="webcamStream" width="100%" height="500" src="http://192.168.2.163:8080"></iframe>
+            <h5>Fan Speed</h5>
+            <input type="range" id="fan-speed" min="0" max="100" value="50" class="form-range" onchange="setFanSpeed(this.value)">
+            <p>Current Fan Speed: <span id="current-fan-speed">50</span>%</p>
         </div>
     </div>
+
+
 
     <div class="card">
         <div class="card-header">Light Control Dashboard</div>

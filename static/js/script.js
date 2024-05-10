@@ -39,6 +39,36 @@ function setLightTimes() {
     .then(data => console.log(data));
 }
 
+function setFanSpeed(speed) {
+    fetch('/set-fan-speed', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ speed })
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
+}
+
+function setFanSpeed(speed) {
+    $.ajax({
+        url: '/setFanSpeed',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({speed: speed}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
 updateTime(); // Initialize the time update
 
 function toggleLight(state) {
