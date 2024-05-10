@@ -55,11 +55,15 @@ def open_co2_valve():
 
 def close_co2_valve():
     co2valve.on()
+    
+def set_fan_speed(speed):
+    fan.on()
+    fan.value = speed
 
 light = OutputDevice(17)
 co2valve = OutputDevice(27)
-fan = OutputDevice(23)
-fridge = OutputDevice(22)
+fan = OutputDevice(12)
+fridge = OutputDevice(16)
 
 # Database connection parameters
 db_config = {
@@ -150,6 +154,19 @@ def data():
 
     return jsonify(results)
 
+@app.route('/fanspeed', methods=['POST'])
+def fan_speed():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    speed = request.get_json().get('speed')
+    if speed is None:
+        return jsonify({'error': 'Missing required parameter'}), 400
+
+    set_fan_speed(speed)
+
+    return jsonify({'status': 'Fan speed set to {}'.format(speed)})
+
 @app.route('/data/now')
 def data_now():
     conn = mysql.connector.connect(**db_config)
@@ -187,6 +204,9 @@ if __name__ == '__main__':
     print("switch light off")
     close_co2_valve()
     turn_light_off()
+    
+    set_fan_speed(0.5)
+    
     # Start scheduler in a separate thread
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.start()
