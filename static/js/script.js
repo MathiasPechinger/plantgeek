@@ -231,8 +231,8 @@ function fetchFridgeState() {
     $.ajax({
         url: '/fridge_state',
         success: function(data) {
-            // console.log("Received latest data:", data);
-            if (data == "true")
+            console.log("Received latest data:", data);
+            if (data == true)
             {
                 // document.getElementById('fridge-progress').setAttribute('aria-valuenow', '100');
                 document.getElementById('fridge-progress').style.width = '100%';

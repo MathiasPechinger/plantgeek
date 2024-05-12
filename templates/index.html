@@ -45,6 +45,12 @@
             margin-bottom: 4px; /* Adjusted for consistency, assuming your mb-4 class is around this value */
             text-align: center;
         }
+        .rotate-container {
+            transform: rotate(180deg);
+            /* Optional: to maintain the layout */
+            transform-origin: center;
+        }
+
     </style>
 </head>
 <body>
@@ -62,7 +68,7 @@
         <div class="card-header">Live Stream</div>
         <div class="d-flex justify-content-center"></div>
         <div class="responsive-iframe-container">
-            <iframe id="webcamStream" src="http://192.168.2.163:8080"></iframe>
+            <iframe id="webcamStream" src="http://192.168.2.164:8080" style="transform: rotate(180deg);"></iframe>
         </div>
     </div>
 

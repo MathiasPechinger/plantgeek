@@ -90,7 +90,7 @@ class Fridge:
         self.output_device = output_device
 
     def switch_on(self):
-        minimum_off_time = 120  # 2 minutes
+        minimum_off_time = 60  # 5 minutes
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
             self.is_on = True
             self.off_time = None
@@ -266,7 +266,7 @@ def run_scheduler_light():
     print("Scheduler stopped running")
     
 def run_scheduler_fridge():
-    print("starting light scheduler")
+    print("starting fridge scheduler")
     scheduler_fridge.run()
     print("Scheduler stopped running")
     
