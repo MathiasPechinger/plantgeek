@@ -232,11 +232,18 @@ function fetchFridgeState() {
         url: '/fridge_state',
         success: function(data) {
             // console.log("Received latest data:", data);
-            document.getElementById('fridge-state').innerText = data;
             if (data == "true")
-                document.getElementById('fridge-progress').setAttribute('aria-valuenow', '100');
+            {
+                // document.getElementById('fridge-progress').setAttribute('aria-valuenow', '100');
+                document.getElementById('fridge-progress').style.width = '100%';
+                document.getElementById('fridge-state').innerText = "cooling";
+            }
             else
-                document.getElementById('fridge-progress').setAttribute('aria-valuenow', '0');
+            {
+                // document.getElementById('fridge-progress').setAttribute('aria-valuenow', '0');
+                document.getElementById('fridge-progress').style.width = '0%';
+                document.getElementById('fridge-state').innerText = "standby";
+            }
         },
         error: function(xhr, status, error) {
             console.error("Failed to fetch latest data:", error);

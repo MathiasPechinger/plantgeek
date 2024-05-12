@@ -90,7 +90,7 @@ class Fridge:
         self.output_device = output_device
 
     def switch_on(self):
-        minimum_off_time = 60  # 1 minute
+        minimum_off_time = 120  # 2 minutes
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
             self.is_on = True
             self.off_time = None
@@ -139,9 +139,9 @@ def get_current_temp():
 
 def control_fridge(sc):
     temp = get_current_temp()
-    if temp > 25:
+    if temp > 24:
         fridge.switch_on()  # You need to define this function
-    elif temp < 22:
+    elif temp < 23:
         fridge.switch_off()  # You need to define this function
     # schedule the next check in 60 seconds
     sc.enter(5, 1, control_fridge, (sc,))
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     
     # set_fan_speed(0.5)
     fan.on()
-    fan.value = 0.4
+    fan.value = 0.6
     fridge.switch_off()
     
     # Start schedulers in a separate thread

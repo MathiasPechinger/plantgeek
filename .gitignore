@@ -4,3 +4,4 @@ old/
 venv/
 .lgd-nfy0
 ip_cam/node_modules/
+*.png
