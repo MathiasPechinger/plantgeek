@@ -20,9 +20,11 @@ i2c = busio.I2C(board.SCL, board.SDA)
 sensor = CCS811(i2c)
 dht_device = adafruit_dht.DHT22(board.D4)
 
+
 while True:
     try:
-        temperature_c = dht_device.temperature
+        temperatureOffsetCorrection = 0
+        temperature_c = dht_device.temperature+temperatureOffsetCorrection
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = dht_device.humidity
 

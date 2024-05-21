@@ -90,7 +90,7 @@ class Fridge:
         self.output_device = output_device
 
     def switch_on(self):
-        minimum_off_time = 60  # 5 minutes
+        minimum_off_time = 120  # 2 minutes
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
             self.is_on = True
             self.off_time = None
@@ -123,7 +123,6 @@ def get_current_temp():
     SELECT temperature_c
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    AND MINUTE(timestamp) % 10 = 0
     ORDER BY timestamp DESC
     LIMIT 1;
     """
@@ -139,9 +138,9 @@ def get_current_temp():
 
 def control_fridge(sc):
     temp = get_current_temp()
-    if temp > 24:
+    if temp > 27.5:
         fridge.switch_on()  # You need to define this function
-    elif temp < 23:
+    elif temp < 26.8:
         fridge.switch_off()  # You need to define this function
     # schedule the next check in 60 seconds
     sc.enter(5, 1, control_fridge, (sc,))
@@ -244,7 +243,6 @@ def data_now():
     SELECT temperature_c, humidity, eco2, tvoc
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    AND MINUTE(timestamp) % 10 = 0
     ORDER BY timestamp DESC
     LIMIT 1;
     """
