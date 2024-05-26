@@ -88,6 +88,23 @@ function toggleLight(state) {
     });
 }
 
+function requestCO2(state) {
+    $.ajax({
+        url: '/co2/control',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({state: state}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
 
 
 var timespan = 120; // default timespan

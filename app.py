@@ -12,6 +12,7 @@ import logging
 
 import subprocess
 from functools import wraps
+import time
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -185,6 +186,31 @@ def light_control():
         turn_light_on()
     else:
         turn_light_off()
+
+    return jsonify({'status': 'light turned ON' if state else 'light turned OFF'})
+
+
+@app.route('/co2/control', methods=['POST'])
+def co2_control():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    state = request.get_json().get('state')
+    if state is None:
+        return jsonify({'error': 'Missing required parameter'}), 400
+
+    if state:
+        def co2_control():
+            open_co2_valve()
+            time.sleep(0.4)
+            close_co2_valve()
+
+        co2_control()
+
+    # if state:
+    #     turn_light_on()
+    # else:
+    #     turn_light_off()
 
     return jsonify({'status': 'light turned ON' if state else 'light turned OFF'})
 
