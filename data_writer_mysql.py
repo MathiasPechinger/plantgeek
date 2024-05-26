@@ -38,19 +38,8 @@ def connect_to_mysql():
             time.sleep(5)  # wait for 5 seconds before re-trying to connect
     return db
 
-db = connect_to_mysql()
-cursor = db.cursor()
-
-# Initialize sensors
-i2c = busio.I2C(board.SCL, board.SDA)
-sensor = CCS811(i2c)
-dht_device = adafruit_dht.DHT22(board.D4)
-
-while True:
-    if not db.is_connected():
-        db = connect_to_mysql()
-        cursor = db.cursor()
-    
+def read_sensor_data(sensor, dht_device):
+    global sensor_error_logged
     try:
         # Wait for the sensor to be ready
         while not sensor.data_ready:
@@ -60,20 +49,43 @@ while True:
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = dht_device.humidity
 
-        # Insert data into database
-        query = "INSERT INTO measurements (temperature_c, temperature_f, humidity, eco2, tvoc) VALUES (%s, %s, %s, %s, %s)"
-        values = (temperature_c, temperature_f, humidity, sensor.eco2, sensor.tvoc)
-        cursor.execute(query, values)
-        db.commit()
-
         # Log healthy status if sensor errors were previously logged
         if sensor_error_logged:
             logging.info("Sensor data successfully read, system is healthy again.")
             sensor_error_logged = False
 
+        return temperature_c, temperature_f, humidity, sensor.eco2, sensor.tvoc
+
     except RuntimeError as err:
         if not sensor_error_logged:
             logging.error("Error while reading sensor data: %s", err.args[0])
             sensor_error_logged = True
+        return None
 
-    time.sleep(5.0)
+def insert_data_to_db(cursor, data):
+    query = "INSERT INTO measurements (temperature_c, temperature_f, humidity, eco2, tvoc) VALUES (%s, %s, %s, %s, %s)"
+    cursor.execute(query, data)
+
+def main():
+    db = connect_to_mysql()
+    cursor = db.cursor()
+
+    # Initialize sensors
+    i2c = busio.I2C(board.SCL, board.SDA)
+    sensor = CCS811(i2c)
+    dht_device = adafruit_dht.DHT22(board.D4)
+
+    while True:
+        if not db.is_connected():
+            db = connect_to_mysql()
+            cursor = db.cursor()
+
+        data = read_sensor_data(sensor, dht_device)
+        if data:
+            insert_data_to_db(cursor, data)
+            db.commit()
+
+        time.sleep(5.0)
+
+if __name__ == "__main__":
+    main()
