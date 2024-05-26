@@ -11,11 +11,35 @@ import logging
 import subprocess
 from functools import wraps
 
+# Custom logging filter to exclude unwanted log messages
+class ExcludeLogsFilter(logging.Filter):
+    def filter(self, record):
+        excluded_endpoints = [
+            'GET /fridge_state',
+            'GET /data/rpi-temperature',
+            'GET /data/now',
+            'GET /data?timespan='
+        ]
+        return not any(endpoint in record.getMessage() for endpoint in excluded_endpoints)
+
+# Set up the main logger
 logging.basicConfig(filename='logs/webapp.log', filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
+
+# Apply the custom filter to the Werkzeug logger
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.addFilter(ExcludeLogsFilter())
 
 app = Flask(__name__)
 sensorsAlive = False
 databaseAlive = False
+
+# Apply the custom filter to the Flask app logger
+for handler in logging.getLogger('werkzeug').handlers:
+    handler.addFilter(ExcludeLogsFilter())
+
+# State tracking variables for error logging
+db_error_logged = False
+sensors_error_logged = False
 
 # Ensure only authorized users can access the route
 def requires_auth(f):
@@ -44,21 +68,18 @@ scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
 light_on_time = datetime.time(8, 0)
 light_off_time = datetime.time(22, 0)
 
-scheduler_light = sched.scheduler(time.time, time.sleep)
-
 def turn_light_on():
     light.off()
 
 def turn_light_off():
     light.on()
-    
+
 def open_co2_valve():
     co2valve.off()
 
 def close_co2_valve():
     co2valve.on()
-    
-    
+
 def set_fan_speed(speed):
     fan.on()
     pwm_value = float(float(speed) / 100)
@@ -98,7 +119,7 @@ class Fridge:
         self.off_time = datetime.datetime.now()
         self.output_device.on()
 
-fridge = Fridge(OutputDevice(16)) # GPIO pin 16, where fridge is connected
+fridge = Fridge(OutputDevice(16))  # GPIO pin 16, where fridge is connected
 
 @app.route('/fridge_state')
 def fridge_state():
@@ -128,16 +149,32 @@ def get_current_temp():
 
 def control_fridge(sc):
     temp = get_current_temp()
+    global db_error_logged, sensors_error_logged
+    
     if temp == -999:
         fridge.switch_off()
-        logging.error("[control_fridge] Fridge will stay off. Database is not alive")
+        if not db_error_logged:
+            logging.error("[control_fridge] Fridge will stay off. Database is not alive")
+            db_error_logged = True
         sc.enter(5, 1, control_fridge, (sc,))
         return
+    else:
+        if db_error_logged:
+            logging.info("[control_fridge] Database is alive again. Fridge control resumed")
+            db_error_logged = False
+    
     if temp == -998:
         fridge.switch_off()
-        logging.error("[control_fridge] Fridge will stay off. Sensors are not alive")
+        if not sensors_error_logged:
+            logging.error("[control_fridge] Fridge will stay off. Sensors are not alive")
+            sensors_error_logged = True
         sc.enter(5, 1, control_fridge, (sc,))
         return
+    else:
+        if sensors_error_logged:
+            logging.info("[control_fridge] Sensors are alive again. Fridge control resumed")
+            sensors_error_logged = False
+    
     if temp > 27.5:
         fridge.switch_on()
     elif temp < 26.8:
@@ -157,18 +194,32 @@ def set_light_times():
 
 def check_time_and_control_light():
     global light_on_time, light_off_time
-
+    global db_error_logged, sensors_error_logged
+    
     if not databaseAlive:
-        logging.error("[check_time_and_control_light] Lights will be off until database is alive")
+        if not db_error_logged:
+            logging.error("[check_time_and_control_light] Lights will be off until database is alive")
+            db_error_logged = True
         scheduler_light.enter(5, 1, check_time_and_control_light)
         turn_light_off()
         return
+    else:
+        if db_error_logged:
+            logging.info("[check_time_and_control_light] Database is alive again. Light control resumed")
+            db_error_logged = False
+    
     if not sensorsAlive:
-        logging.error("[check_time_and_control_light] Lights will be off until sensors are alive")
+        if not sensors_error_logged:
+            logging.error("[check_time_and_control_light] Lights will be off until sensors are alive")
+            sensors_error_logged = True
         scheduler_light.enter(5, 1, check_time_and_control_light)
         turn_light_off()
         return
-
+    else:
+        if sensors_error_logged:
+            logging.info("[check_time_and_control_light] Sensors are alive again. Light control resumed")
+            sensors_error_logged = False
+    
     current_time = datetime.datetime.now().time()
     if light_on_time <= current_time <= light_off_time:
         turn_light_on()
@@ -219,9 +270,9 @@ def cpu_temp():
 
 @app.route('/data')
 def data():
-    if not databaseAlive:
-        return 
-    
+    if not databaseAlive or not sensorsAlive:
+        return ''
+
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
@@ -238,7 +289,7 @@ def data():
     return jsonify(results)
 
 def check_database():
-    global databaseAlive
+    global databaseAlive, db_error_logged
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
@@ -246,15 +297,21 @@ def check_database():
         result = cursor.fetchone()  # Fetch the result
         cursor.close()
         conn.close()
+        if not databaseAlive:
+            logging.info("[check_database] Database is alive again.")
         databaseAlive = True
+        db_error_logged = False
     except mysql.connector.Error as e:
+        if databaseAlive:
+            logging.error("[check_database] Database error: %s", str(e))
         databaseAlive = False
-        logging.error("[check_database] Database error: %s", str(e))
-    scheduler_databaseCheck.enter(10, 1, check_database)
+        db_error_logged = True
+    scheduler_databaseCheck.enter(1, 1, check_database)
 
 def check_sensors():
+    global sensorsAlive, sensors_error_logged
     if not databaseAlive:
-        scheduler_sensorCheck.enter(5, 1, check_sensors)
+        scheduler_sensorCheck.enter(1, 1, check_sensors)
         return
 
     conn = mysql.connector.connect(**db_config)
@@ -268,19 +325,26 @@ def check_sensors():
     """
     cursor.execute(query)
     result = cursor.fetchone()
-    global sensorsAlive
 
     if result is None:
+        if sensorsAlive:
+            logging.error("[check_sensors] Sensors are offline!")
         sensorsAlive = False
+        sensors_error_logged = True
     else:
         last_timestamp = result[0]
         current_time = datetime.datetime.now()
         time_difference = current_time - last_timestamp
         if time_difference.total_seconds() > 60:
+            if sensorsAlive:
+                logging.error("[check_sensors] Sensors are offline!")
             sensorsAlive = False
-            logging.error("[check_sensors] Sensors are offline!")
+            sensors_error_logged = True
         else:
+            if not sensorsAlive:
+                logging.info("[check_sensors] Sensors are online again.")
             sensorsAlive = True
+            sensors_error_logged = False
             
     cursor.close()
     conn.close()
@@ -299,9 +363,9 @@ def fan_speed():
 
 @app.route('/data/now')
 def data_now():
-    if not databaseAlive:
-        return 
-    
+    if not databaseAlive or not sensorsAlive:
+        return ''
+
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
@@ -325,7 +389,6 @@ def run_scheduler(scheduler):
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
 if __name__ == '__main__':
-
     scheduler_light.enter(0, 1, check_time_and_control_light)
     scheduler_fridge.enter(0, 1, control_fridge, (scheduler_fridge,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
