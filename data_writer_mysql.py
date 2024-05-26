@@ -4,15 +4,29 @@ import board
 import busio
 from adafruit_ccs811 import CCS811
 import mysql.connector
+from mysql.connector import Error
+import logging
 
-# Setup MySQL connection
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="aligator3",
-    database="sensor_data"
-)
+logging.basicConfig(filename='logs/data_writer.log', filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
 
+def connect_to_mysql():
+    while True:
+        try:
+            db = mysql.connector.connect(   host="localhost",
+                                            user="root",
+                                            password="aligator3",
+                                            database="sensor_data")
+            if db.is_connected():
+                db_Info = db.get_server_info()
+                logging.info("Connected to MySQL Server version %s", db_Info)
+                break
+
+        except Error as e:
+            logging.error("Error while connecting to MySQL %s", str(e))
+            time.sleep(5)  # wait for 5 seconds before re-trying to connect
+    return db
+
+db = connect_to_mysql()
 cursor = db.cursor()
 
 # Initialize sensors
@@ -22,9 +36,13 @@ dht_device = adafruit_dht.DHT22(board.D4)
 
 
 while True:
+    
+    if db.is_connected() == False:
+        db = connect_to_mysql()
+        cursor = db.cursor()
+    
     try:
-        temperatureOffsetCorrection = 0
-        temperature_c = dht_device.temperature+temperatureOffsetCorrection
+        temperature_c = dht_device.temperature
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = dht_device.humidity
 
@@ -43,5 +61,5 @@ while True:
         
     except RuntimeError as err:
         print(err.args[0])
-
+        logging.error("Error while connecting to MySQL %s", err.args[0])
     time.sleep(2.0)
