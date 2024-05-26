@@ -14,13 +14,14 @@ import subprocess
 from functools import wraps
 import time
 
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+
+logging.basicConfig(filename='logs/webapp.log', filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
+
 
 
 app = Flask(__name__)
 
-
+sensorsAlive = False
 
 # Ensure only authorized users can access the route
 def requires_auth(f):
@@ -82,8 +83,7 @@ fan = PWMOutputDevice(12)
 
 
 
-class Fridge:
-    
+class Fridge:    
     
     def __init__(self, output_device):
         self.is_on = False
@@ -117,6 +117,10 @@ def fridge_state():
     return jsonify(results)
 
 def get_current_temp():
+    
+    if not databaseAlive:
+        return -999
+    
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()      
    
@@ -139,6 +143,11 @@ def get_current_temp():
 
 def control_fridge(sc):
     temp = get_current_temp()
+    
+    if temp == -999:
+        print("Cannot control fridge. Database is not alive")
+        sc.enter(5, 1, control_fridge, (sc,))
+        return
     if temp > 27.5:
         fridge.switch_on()  # You need to define this function
     elif temp < 26.8:
@@ -163,6 +172,13 @@ def set_light_times():
 def check_time_and_control_light():
     global light_on_time 
     global light_off_time
+    
+    if not sensorsAlive:
+        print("Lights will be off until sensors are alive")
+        scheduler_light.enter(60, 1, check_time_and_control_light)
+        turn_light_off()
+        return
+    
     current_time = datetime.datetime.now().time()
     if current_time >= light_on_time and current_time <= light_off_time:
         turn_light_on()
@@ -207,11 +223,6 @@ def co2_control():
 
         co2_control()
 
-    # if state:
-    #     turn_light_on()
-    # else:
-    #     turn_light_off()
-
     return jsonify({'status': 'light turned ON' if state else 'light turned OFF'})
 
 @app.route('/')
@@ -225,6 +236,9 @@ def cpu_temp():
 
 @app.route('/data')
 def data():
+    if not databaseAlive:
+        return 
+    
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
        
@@ -247,6 +261,67 @@ def data():
 
     return jsonify(results)
 
+databaseAlive = False
+
+def check_database():
+    print("------> Checking database")
+    global databaseAlive
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        conn.close()
+        print("Database is alive")
+        databaseAlive = True
+    except mysql.connector.Error as e:
+        databaseAlive = False
+        print("Database is not alive:", str(e))
+        
+    scheduler_databaseCheck.enter(60, 1, check_database) # check every 60 seconds
+
+
+
+def check_sensors():
+    if not databaseAlive:
+        print("Database is not alive. Cannot check sensors")
+        scheduler_sensorCheck.enter(60, 1, check_sensors)
+        return
+    
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    
+    query = """
+    SELECT timestamp
+    FROM measurements
+    ORDER BY timestamp DESC
+    LIMIT 1;
+    """
+    cursor.execute(query)
+    result = cursor.fetchone()
+    
+    global sensorsAlive
+    
+    if result is None:
+        sensorsAlive = False
+    else:
+        last_timestamp = result[0]
+        current_time = datetime.datetime.now()
+        time_difference = current_time - last_timestamp
+        if time_difference.total_seconds() > 60:
+            sensorsAlive = False
+            print("Sensors are not alive")
+        else:
+            sensorsAlive = True
+            print("Sensors are alive")
+    
+    cursor.close()
+    conn.close()
+    
+    scheduler_sensorCheck.enter(60, 1, check_sensors) # check every 60 seconds
+    
+
+
 @app.route('/setFanSpeed', methods=['POST'])
 def fan_speed():
     if not request.is_json:
@@ -261,6 +336,10 @@ def fan_speed():
 
 @app.route('/data/now')
 def data_now():
+    
+    if not databaseAlive:
+        return 
+    
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
        
@@ -294,12 +373,28 @@ def run_scheduler_fridge():
     scheduler_fridge.run()
     print("Scheduler stopped running")
     
+def run_scheduler_sensorCheck():
+    print("starting sensor check scheduler")
+    scheduler_sensorCheck.run()
+    print("Scheduler stopped running")
+    
+def run_scheduler_databaseCheck():
+    print("starting database check scheduler")
+    scheduler_databaseCheck.run()
+    print("Scheduler stopped running")
+    
+    
+scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
 scheduler_fridge = sched.scheduler(time.time, time.sleep)
+scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
 
 if __name__ == '__main__':
     print("Entering main")
+    
     scheduler_light.enter(0, 1, check_time_and_control_light)
     scheduler_fridge.enter(0, 1, control_fridge, (scheduler_fridge,))
+    scheduler_sensorCheck.enter(0, 1, check_sensors)
+    scheduler_databaseCheck.enter(0, 1, check_database)
     
     print("switch light off")
     close_co2_valve()
@@ -316,6 +411,12 @@ if __name__ == '__main__':
     
     scheduler_thread_light = threading.Thread(target=run_scheduler_light)
     scheduler_thread_light.start()
+
+    scheduler_thread_sensorCheck = threading.Thread(target=run_scheduler_sensorCheck)
+    scheduler_thread_sensorCheck.start()    
+    
+    scheduler_databaseCheck = threading.Thread(target=run_scheduler_databaseCheck)
+    scheduler_databaseCheck.start()
     
     print("app.run")
     app.run(debug=False, host='0.0.0.0')

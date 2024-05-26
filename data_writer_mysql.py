@@ -61,5 +61,5 @@ while True:
         
     except RuntimeError as err:
         print(err.args[0])
-        logging.error("Error while connecting to MySQL %s", err.args[0])
+        logging.warn("Error while connecting to MySQL %s", err.args[0])
     time.sleep(2.0)
