@@ -1,0 +1,14 @@
+[Unit]
+Description=Node.js Application Service
+After=network.target
+
+[Service]
+Type=simple
+User=wolf
+WorkingDirectory={{WORKING_DIR}}
+ExecStart={{PYTHON_EXEC}} {{SCRIPT_PATH}}
+Restart=on-failure
+Environment=NODE_ENV=production PORT=3000
+
+[Install]
+WantedBy=multi-user.target

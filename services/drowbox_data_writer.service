@@ -1,0 +1,16 @@
+[Unit]
+Description=My Python Script Service
+After=network.target
+
+[Service]
+Type=simple
+User=wolf
+WorkingDirectory={{WORKING_DIR}}
+ExecStart={{PYTHON_EXEC}} {{SCRIPT_PATH}}
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=0
+StartLimitBurst=10
+
+[Install]
+WantedBy=multi-user.target
