@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Update package list
-# sudo apt update
+sudo apt update
 
-# virtualenv venv
-# source venv/bin/activate
-# pip install -r requirements.txt
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
 
 

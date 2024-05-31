@@ -55,3 +55,10 @@ sudo apt install php libapache2-mod-php php-mysql -y
 sudo apt install phpmyadmin -y
 
 ```
+
+
+# install zigbee2mqtt
+
+```
+sudo apt-get install git curl build-essential
+```

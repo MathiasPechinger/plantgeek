@@ -105,6 +105,24 @@ function requestCO2(state) {
     });
 }
 
+function zigbeePairing(state) {
+    $.ajax({
+        url: '/zigbee/control',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({state: state}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+
 
 
 var timespan = 120; // default timespan
