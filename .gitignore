@@ -6,3 +6,6 @@ venv/
 ip_cam/node_modules/
 *.png
 *.log
+
+*.service
+__pycache__/

@@ -9,6 +9,10 @@ this is a work in progress
 
 ## Setup guide:
 
+```
+chmod +x setup.sh
+./setup.sh
+```
 
 
 ```
@@ -39,4 +43,15 @@ pip install Adafruit_CircuitPython_CCS811
 ```
 sudo apt-get install -y libgpiod2 libgpiod-dev
 pip install gpiod
+```
+
+
+# Debugging mysql database
+
+phpMyAdmin installation
+```
+sudo apt install apache2 -y
+sudo apt install php libapache2-mod-php php-mysql -y
+sudo apt install phpmyadmin -y
+
 ```

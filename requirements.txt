@@ -8,7 +8,6 @@ adafruit-circuitpython-requests==3.2.6
 adafruit-circuitpython-typing==1.10.3
 Adafruit-PlatformDetect==3.62.0
 Adafruit-PureIO==1.1.11
-Adafruit_DHT==1.4.0
 APScheduler==3.10.4
 blinker==1.8.0
 click==8.1.7

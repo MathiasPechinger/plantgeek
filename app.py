@@ -10,6 +10,7 @@ import psutil
 import logging
 import subprocess
 from functools import wraps
+from include.data_writer_mysql import SensorDataLogger
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -88,8 +89,8 @@ def set_fan_speed(speed):
 # Database connection parameters
 db_config = {
     'host': 'localhost',
-    'user': 'root',
-    'password': 'aligator3',
+    'user': 'drow',
+    'password': 'drowBox4ever',
     'database': 'sensor_data'
 }
 
@@ -387,8 +388,16 @@ def run_scheduler(scheduler):
         scheduler.run()
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
+        
+def start_sensor_data_logger():
+    logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
+    logger.run()
 
 if __name__ == '__main__':
+    
+    sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
+    sensor_data_logger_thread.start()
+    
     scheduler_light.enter(0, 1, check_time_and_control_light)
     scheduler_fridge.enter(0, 1, control_fridge, (scheduler_fridge,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
