@@ -11,6 +11,7 @@ import logging
 import subprocess
 from functools import wraps
 from include.data_writer_mysql import SensorDataLogger
+from include.fridge_controller import Fridge
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -98,89 +99,90 @@ light = OutputDevice(17)
 co2valve = OutputDevice(27)
 fan = PWMOutputDevice(12)
 
-class Fridge:
-    def __init__(self, output_device):
-        self.is_on = False
-        self.off_time = None
-        self.output_device = output_device
+# class Fridge:
+#     def __init__(self, output_device):
+#         self.is_on = False
+#         self.off_time = None
+#         self.output_device = output_device
 
-    def switch_on(self):
-        minimum_off_time = 120
-        if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
-            self.is_on = True
-            self.off_time = None
-            self.output_device.off()
-        else:
-            print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
-            remaining_time = minimum_off_time - (datetime.datetime.now() - self.off_time).total_seconds()
-            print(f"Please wait for {remaining_time} seconds before switching on again.")
+#     def switch_on(self):
+#         minimum_off_time = 120
+#         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
+#             self.is_on = True
+#             self.off_time = None
+#             self.output_device.off()
+#         else:
+#             print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
+#             remaining_time = minimum_off_time - (datetime.datetime.now() - self.off_time).total_seconds()
+#             print(f"Please wait for {remaining_time} seconds before switching on again.")
 
-    def switch_off(self):
-        self.is_on = False
-        self.off_time = datetime.datetime.now()
-        self.output_device.on()
+#     def switch_off(self):
+#         self.is_on = False
+#         self.off_time = datetime.datetime.now()
+#         self.output_device.on()
 
-fridge = Fridge(OutputDevice(16))  # GPIO pin 16, where fridge is connected
+fridge = Fridge(OutputDevice(16),db_config)  # GPIO pin 16, where fridge is connected
 
 @app.route('/fridge_state')
 def fridge_state():
     return jsonify(fridge.is_on)
 
-def get_current_temp():
-    if not databaseAlive:
-        return -999
-    if not sensorsAlive:
-        return -998
+# def get_current_temp():
+#     if not databaseAlive:
+#         return -999
+#     if not sensorsAlive:
+#         return -998
 
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
+#     conn = mysql.connector.connect(**db_config)
+#     cursor = conn.cursor()
 
-    query = """
-    SELECT temperature_c
-    FROM measurements
-    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    ORDER BY timestamp DESC
-    LIMIT 1;
-    """
-    cursor.execute(query)
-    results = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return results[0][0]
+#     query = """
+#     SELECT temperature_c
+#     FROM measurements
+#     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+#     ORDER BY timestamp DESC
+#     LIMIT 1;
+#     """
+#     cursor.execute(query)
+#     results = cursor.fetchall()
+#     cursor.close()
+#     conn.close()
+#     return results[0][0]
 
-def control_fridge(sc):
-    temp = get_current_temp()
-    global db_error_logged, sensors_error_logged
     
-    if temp == -999:
-        fridge.switch_off()
-        if not db_error_logged:
-            logging.error("[control_fridge] Fridge will stay off. Database is not alive")
-            db_error_logged = True
-        sc.enter(5, 1, control_fridge, (sc,))
-        return
-    else:
-        if db_error_logged:
-            logging.info("[control_fridge] Database is alive again. Fridge control resumed")
-            db_error_logged = False
+# def control_fridge(sc):
+#     temp = get_current_temp()
+#     global db_error_logged, sensors_error_logged
     
-    if temp == -998:
-        fridge.switch_off()
-        if not sensors_error_logged:
-            logging.error("[control_fridge] Fridge will stay off. Sensors are not alive")
-            sensors_error_logged = True
-        sc.enter(5, 1, control_fridge, (sc,))
-        return
-    else:
-        if sensors_error_logged:
-            logging.info("[control_fridge] Sensors are alive again. Fridge control resumed")
-            sensors_error_logged = False
+#     if temp == -999:
+#         fridge.switch_off()
+#         if not db_error_logged:
+#             logging.error("[control_fridge] Fridge will stay off. Database is not alive")
+#             db_error_logged = True
+#         sc.enter(5, 1, control_fridge, (sc,))
+#         return
+#     else:
+#         if db_error_logged:
+#             logging.info("[control_fridge] Database is alive again. Fridge control resumed")
+#             db_error_logged = False
     
-    if temp > 27.5:
-        fridge.switch_on()
-    elif temp < 26.8:
-        fridge.switch_off()
-    sc.enter(5, 1, control_fridge, (sc,))
+#     if temp == -998:
+#         fridge.switch_off()
+#         if not sensors_error_logged:
+#             logging.error("[control_fridge] Fridge will stay off. Sensors are not alive")
+#             sensors_error_logged = True
+#         sc.enter(5, 1, control_fridge, (sc,))
+#         return
+#     else:
+#         if sensors_error_logged:
+#             logging.info("[control_fridge] Sensors are alive again. Fridge control resumed")
+#             sensors_error_logged = False
+    
+#     if temp > 27.5:
+#         fridge.switch_on()
+#     elif temp < 26.8:
+#         fridge.switch_off()
+#     sc.enter(5, 1, control_fridge, (sc,))
 
 @app.route('/set-light-times', methods=['POST'])
 def set_light_times():
@@ -388,7 +390,7 @@ def run_scheduler(scheduler):
         scheduler.run()
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
-        
+
 def start_sensor_data_logger():
     logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
     logger.run()
@@ -399,7 +401,7 @@ if __name__ == '__main__':
     sensor_data_logger_thread.start()
     
     scheduler_light.enter(0, 1, check_time_and_control_light)
-    scheduler_fridge.enter(0, 1, control_fridge, (scheduler_fridge,))
+    scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
 
