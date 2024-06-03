@@ -39,18 +39,70 @@ function setLightTimes() {
     .then(data => console.log(data));
 }
 
-function setFanSpeed(speed) {
-    fetch('/set-fan-speed', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+// function setFanSpeed(speed) {
+//     fetch('/set-fan-speed', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ speed })
+//     })
+//     .then(response => response.json())
+//     .then(data => console.log(data))
+//     .catch(error => console.error('Error:', error));
+// }
+
+function setPumpPower(power) {
+    $.ajax({
+        url: '/setPumpPower',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({power: power}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
         },
-        body: JSON.stringify({ speed })
-    })
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
 }
+
+function activatePumpOnce() {
+    $.ajax({
+        url: '/activatePumpOnce',
+        type: 'POST',
+        contentType: 'application/json',
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+function setPumpTime(time) {
+    $.ajax({
+        url: '/setPumpTime',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({time: time}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+
 
 function setFanSpeed(speed) {
     $.ajax({
@@ -106,6 +158,18 @@ function requestCO2(state) {
 }
 
 function zigbeePairing(state) {
+    
+    const pairingText = document.getElementById('pairing-text');
+    const pairingCircle = document.getElementById('pairing-circle');
+
+    if (state) {
+        pairingText.textContent = 'Pairing...';
+        pairingCircle.style.display = 'inline-block';
+    } else {
+        pairingText.textContent = 'Pairing Disabled';
+        pairingCircle.style.display = 'none';
+    }
+
     $.ajax({
         url: '/zigbee/control',
         type: 'POST',
@@ -227,6 +291,19 @@ function updateChart(chart, data) {
     chart.update(); // Redraw the chart
 }
 
+
+function fetchZigbeeDevices() {
+    $.ajax({
+        url: '/zigbee/devices',
+        success: function(data) {
+            document.getElementById('zigbee_device1').innerText = "hello world";  
+        },
+        error: function(xhr, status, error) {
+            console.error("Failed to fetch CPU temperature:", error);
+        }
+    });
+}
+
 function fetchCPUTemperature() {
     $.ajax({
         url: '/data/rpi-temperature',
@@ -341,6 +418,9 @@ setInterval(fetchFridgeState, 3000);
 
 fetchCPUTemperature();
 setInterval(fetchCPUTemperature, 3000);
+
+fetchZigbeeDevices();
+setInterval(fetchZigbeeDevices, 3000);
 
 
 setInterval(updateTemperatureDisplay, 3000);

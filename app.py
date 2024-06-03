@@ -16,6 +16,7 @@ from include.light_controller import Light
 from include.co2_controller import CO2
 from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
+from include.pump_controller import Pump
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -24,7 +25,8 @@ class ExcludeLogsFilter(logging.Filter):
             'GET /fridge_state',
             'GET /data/rpi-temperature',
             'GET /data/now',
-            'GET /data?timespan='
+            'GET /data?timespan=',
+            'GET /zigbee/devices'
         ]
         return not any(endpoint in record.getMessage() for endpoint in excluded_endpoints)
 
@@ -156,6 +158,13 @@ def cpu_temp():
     temps = psutil.sensors_temperatures()
     return jsonify(temps)
 
+@app.route('/zigbee/devices')
+def zigbeeDeviceRoute():
+    temps = psutil.sensors_temperatures()
+    # print("Devices list:")
+    # mqtt_interface.print_devices()
+    return jsonify(temps)
+
 @app.route('/data')
 def data():
     if not databaseAlive or not sensorsAlive:
@@ -249,6 +258,33 @@ def fan_speed():
     fan.set_fan_speed(speed)
     return jsonify({'status': 'Fan speed set to {}'.format(speed)})
 
+@app.route('/setPumpTime', methods=['POST'])
+def pump_time():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    time = request.get_json().get('time')
+    if time is None:
+        return jsonify({'error': 'Missing required parameter'}), 400
+    pump.set_pump_time(time)
+    return jsonify({'status': 'Pump time set to {}'.format(time)})
+
+@app.route('/setPumpPower', methods=['POST'])
+def pump_power():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    power = request.get_json().get('power')
+    if power is None:
+        return jsonify({'error': 'Missing required parameter'}), 400
+    pump.set_pump_power(power)
+    return jsonify({'status': 'Pump time set to {}'.format(power)})
+
+@app.route('/activatePumpOnce', methods=['POST'])
+def pump_once():
+    pump.pump_for_time()
+    return jsonify({'status': 'Pump activated'})
+
 @app.route('/data/now')
 def data_now():
     if not databaseAlive or not sensorsAlive:
@@ -298,7 +334,8 @@ if __name__ == '__main__':
     scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
         
-    # fan = Fan(PWMOutputDevice(12), 0.6) # todo!
+    fan = Fan(PWMOutputDevice(13), 50) 
+    pump = Pump(PWMOutputDevice(12), 5, 50)
     fridge = Fridge(OutputDevice(16),db_config)  # GPIO pin 16, where fridge is connected
     light = Light(db_config)
     co2 = CO2()

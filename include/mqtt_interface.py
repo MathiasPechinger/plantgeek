@@ -34,6 +34,7 @@ class MQTT_Interface:
             # print(f"Received message: {json.dumps(payload, indent=2)}")  # Print the received payload
             if msg.topic == "zigbee2mqtt/bridge/devices":
                 # self.devices = self.extract_device_info(payload)
+                self.devices = self.extract_device_info_extended(payload)
                 print("Devices list updated")
         except json.JSONDecodeError as e:
             print(f"Failed to decode JSON: {e}")

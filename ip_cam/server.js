@@ -25,17 +25,17 @@ const broadcast = (data) => {
 };
 
 server.listen(8080, () => {
-  console.log('Server running on http://192.168.2.164:8080');
+  console.log('Server running on http://192.168.2.167:8080');
 });
 
 const { spawn } = require('child_process');
 const ffmpeg = spawn('ffmpeg', [
   '-f', 'v4l2',
-  '-framerate', '1',
+  '-framerate', '10',
   '-input_format', 'mjpeg',
   '-i', '/dev/video0',
   '-f', 'mjpeg',
-  '-q:v', '20',
+  '-q:v', '200',
   '-',
 ]);
 

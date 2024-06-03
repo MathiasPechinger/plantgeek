@@ -15,11 +15,10 @@
         .card-body { background-color: #f8f9fa; }
         .controls { margin-bottom: 20px; }
         
-
         .responsive-iframe-container {
-        position: relative;
-        overflow: hidden;
-        padding-top: 90%; /* for 16:9 aspect ratio change this to whatever your aspect ratio is */
+            position: relative;
+            overflow: hidden;
+            padding-top: 90%;
         }
 
         .responsive-iframe-container iframe {
@@ -31,33 +30,52 @@
             border: none;
         }
 
-
         .header-container {
-            display: flex; /* Establishes a flex container */
-            align-items: center; /* Centers items vertically in the container */
-            justify-content: space-around; /* Distributes space between and around content items */
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
         }
         .header-image img {
             width: 30%;
             height: auto;
         }
         .header-text h1 {
-            margin-bottom: 4px; /* Adjusted for consistency, assuming your mb-4 class is around this value */
+            margin-bottom: 4px;
             text-align: center;
         }
+
         .rotate-container {
             transform: rotate(180deg);
-            /* Optional: to maintain the layout */
-            transform-origin: center;
         }
 
+        .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .placeholder-circle {
+            width: 20px;
+            height: 20px;
+            border: 4px solid #28a745;
+            border-top: 4px solid #f8f9fa;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     
     <div class="header-container">
         <div class="header-image">
-            <img src="static/images/drow_logo.png" alt="Header Image">
+            <!-- <img src="static/images/drow_logo.png" alt="Header Image"> -->
         </div>
         <div class="header-text">
             <h1>DrowBox alpha</h1>
@@ -68,15 +86,10 @@
         <div class="card-header">Live Stream</div>
         <div class="d-flex justify-content-center"></div>
         <div class="responsive-iframe-container">
-            <iframe id="webcamStream" src="http://192.168.2.164:8080" style="transform: rotate(180deg);"></iframe>
+            <!-- <iframe id="webcamStream" src="http://192.168.2.167:8080" style="transform: rotate(180deg);"></iframe> -->
+            <iframe id="webcamStream" src="http://192.168.2.167:8080"></iframe>
         </div>
     </div>
-
-    <!-- not tested and not working -->
-    <!-- <div class="controls">
-        <input id="timespan" type="number" value="120" class="form-control" placeholder="Enter timespan in seconds" style="width: auto; display: inline-block;">
-        <button onclick="updateTimespan()" class="btn btn-primary">Update Timespan</button>
-    </div> -->
 
     <div class="card">
         <div class="card-header">Fan Control</div>
@@ -87,10 +100,19 @@
         </div>
     </div>
 
+    <div class="card">
+        <div class="card-header">Fan Control</div>
+        <div class="card-body">
+            <h5>Pump Power</h5>
+            <input type="range" id="pump-power" min="0" max="100" value="0" class="form-range" onchange="setPumpPower(this.value)">
+            <p>Current Pump Power: <span id="current-pump-power">0</span>%</p>
+            <input type="number" id="pump-time-input" min="0" max="5" value="0" class="form-control" style="width: auto; display: inline-block;" onchange="setPumpTime(this.value)">
+            <button onclick="activatePumpOnce()" class="btn btn-info">Activate Pump Once</button>
+        </div>
+    </div>
 
     <div class="card">
         <div class="card-header">Fridge State</div>
-
         <div class="card-body">
             <h5>Current State: <span id="fridge-state"></span></h5>
             <div class="progress">
@@ -98,7 +120,6 @@
             </div>
         </div>
     </div>
-
 
     <div class="card">
         <div class="card-header">Light Control Dashboard</div>
@@ -123,8 +144,16 @@
     <div class="card">
         <div class="card-header">Enable Zigbee Pairing</div>
         <div class="card-body">
-            <button onclick="zigbeePairing(true)" class="btn btn-success">enable</button>
-            <button onclick="zigbeePairing(false)" class="btn btn-danger">disable</button>
+            <button onclick="zigbeePairing(true)" class="btn btn-success">Enable</button>
+            <button onclick="zigbeePairing(false)" class="btn btn-danger">Disable</button>
+            <div class="placeholder">
+                <span id="pairing-text"></span>
+                <div id="pairing-circle" class="placeholder-circle"></div>
+
+            </div>
+            <div>
+                Device 1: <span id="zigbee_device1"></span><br>
+            </div>
         </div>
     </div>
 
@@ -152,6 +181,21 @@
 
     <script src="/static/js/script.js"></script>
 
+    <!-- <script>
+        function zigbeePairing(enable) {
+            const pairingText = document.getElementById('pairing-text');
+            const pairingCircle = document.getElementById('pairing-circle');
 
+            if (enable) {
+                pairingText.textContent = 'Pairing...';
+                pairingCircle.style.display = 'inline-block';
+            } else {
+                pairingText.textContent = 'Pairing Disabled';
+                pairingCircle.style.display = 'none';
+            }
+
+            // Add the actual logic for enabling/disabling Zigbee pairing here
+        }
+    </script> -->
 </body>
 </html>
