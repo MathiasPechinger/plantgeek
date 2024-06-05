@@ -31,11 +31,11 @@ server.listen(8080, () => {
 const { spawn } = require('child_process');
 const ffmpeg = spawn('ffmpeg', [
   '-f', 'v4l2',
-  '-framerate', '10',
+  '-framerate', '1',
   '-input_format', 'mjpeg',
   '-i', '/dev/video0',
   '-f', 'mjpeg',
-  '-q:v', '200',
+  '-q:v', '20',
   '-',
 ]);
 

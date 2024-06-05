@@ -290,18 +290,49 @@ function updateChart(chart, data) {
     }
     chart.update(); // Redraw the chart
 }
+// Function to create dynamic list items for state.json data
+function createStateList(data) {
+    const listContainer = document.getElementById('dynamic-list');
+    listContainer.innerHTML = ''; // Clear any existing items
+    for (const [deviceId, deviceData] of Object.entries(data)) {
+        const listItem = document.createElement('li');
+        listItem.className = 'list-group-item';
+        listItem.textContent = `ID: ${deviceId}, State: ${deviceData.state}, Voltage: ${deviceData.voltage}, Power: ${deviceData.power}`;
+        listContainer.appendChild(listItem);
+    }
+}
 
-
-function fetchZigbeeDevices() {
-    $.ajax({
-        url: '/zigbee/devices',
-        success: function(data) {
-            document.getElementById('zigbee_device1').innerText = "hello world";  
-        },
-        error: function(xhr, status, error) {
-            console.error("Failed to fetch CPU temperature:", error);
-        }
+// Function to create dynamic list items for JSON data
+function createDatabaseList(data) {
+    const listContainer = document.getElementById('dynamic-list');
+    data.forEach(device => {
+        const listItem = document.createElement('li');
+        listItem.className = 'list-group-item';
+        listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${device.lastSeen}, IEEE Address: ${device.ieeeAddr}`;
+        listContainer.appendChild(listItem);
     });
+}
+
+// Function to fetch Zigbee state data from state.json
+function fetchZigbeeState() {
+    fetch('http://localhost:5010/zigbee/state')
+    .then(response => response.json())
+    .then(data => {
+        console.log('Zigbee state data:', data);  // Log the response data
+        createStateList(data);
+    })
+    .catch(error => console.error('Error fetching Zigbee state:', error));
+}
+
+// Function to fetch Zigbee device data from the JSON file
+function fetchZigbeeDevices() {
+    fetch('http://localhost:5010/zigbee/devices')
+    .then(response => response.json())
+    .then(data => {
+        console.log('Zigbee devices data:', data);  // Log the response data
+        createDatabaseList(data);
+    })
+    .catch(error => console.error('Error fetching Zigbee devices:', error));
 }
 
 function fetchCPUTemperature() {
@@ -343,7 +374,7 @@ function fetchFridgeState() {
     $.ajax({
         url: '/fridge_state',
         success: function(data) {
-            console.log("Received latest data:", data);
+            // console.log("Received latest data:", data);
             if (data == true)
             {
                 // document.getElementById('fridge-progress').setAttribute('aria-valuenow', '100');
@@ -421,6 +452,10 @@ setInterval(fetchCPUTemperature, 3000);
 
 fetchZigbeeDevices();
 setInterval(fetchZigbeeDevices, 3000);
+
+// Add this line to fetch the Zigbee state data periodically
+fetchZigbeeState()
+setInterval(fetchZigbeeState, 3000);
 
 
 setInterval(updateTemperatureDisplay, 3000);

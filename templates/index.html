@@ -153,6 +153,8 @@
             </div>
             <div>
                 Device 1: <span id="zigbee_device1"></span><br>
+                <ul id="dynamic-list" class="list-group"></ul>
+
             </div>
         </div>
     </div>
@@ -180,22 +182,5 @@
     <button onclick="rebootSystem()" class="btn btn-warning">Reboot System</button>
 
     <script src="/static/js/script.js"></script>
-
-    <!-- <script>
-        function zigbeePairing(enable) {
-            const pairingText = document.getElementById('pairing-text');
-            const pairingCircle = document.getElementById('pairing-circle');
-
-            if (enable) {
-                pairingText.textContent = 'Pairing...';
-                pairingCircle.style.display = 'inline-block';
-            } else {
-                pairingText.textContent = 'Pairing Disabled';
-                pairingCircle.style.display = 'none';
-            }
-
-            // Add the actual logic for enabling/disabling Zigbee pairing here
-        }
-    </script> -->
 </body>
 </html>
