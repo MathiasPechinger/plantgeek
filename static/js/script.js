@@ -294,41 +294,42 @@ function updateChart(chart, data) {
 function createStateList(data) {
     const listContainer = document.getElementById('dynamic-list');
     listContainer.innerHTML = ''; // Clear any existing items
+    const deviceMap = {
+        light: 'Light',
+        fridge: 'Fridge',
+        co2: 'CO2 Valve'
+    };
+    const usedDevices = Object.keys(deviceMap);
     for (const [deviceId, deviceData] of Object.entries(data)) {
-        const listItem = document.createElement('li');
-        listItem.className = 'list-group-item';
-        listItem.textContent = `ID: ${deviceId}, State: ${deviceData.state}, Voltage: ${deviceData.voltage}, Power: ${deviceData.power}`;
-        listContainer.appendChild(listItem);
+        if (usedDevices.includes(deviceId)) {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item';
+            const deviceName = deviceMap[deviceId];
+            listItem.textContent = `ID: ${deviceId}, Device: ${deviceName}, State: ${deviceData.state}, Voltage: ${deviceData.voltage}, Power: ${deviceData.power}`;
+            listContainer.appendChild(listItem);
+            usedDevices.splice(usedDevices.indexOf(deviceId), 1);
+        }
     }
-}
-
-// Function to create dynamic list items for JSON data
-function createDatabaseList(data) {
-    const listContainer = document.getElementById('dynamic-list');
-    data.forEach(device => {
+    usedDevices.forEach(deviceId => {
         const listItem = document.createElement('li');
         listItem.className = 'list-group-item';
-        listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${calculateLastSeen(device.lastSeen)} hours ago, IEEE Address: ${device.ieeeAddr}`;
-        // listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${device.lastSeen}, IEEE Address: ${device.ieeeAddr}`;
+        const deviceName = deviceMap[deviceId];
+        listItem.textContent = `ID: ${deviceId}, Device: ${deviceName}, State: Unused`;
         listContainer.appendChild(listItem);
     });
 }
 
-function calculateLastSeen(lastSeen) {
-    const currentTime = new Date();
-    const lastSeenTime = new Date(lastSeen);
-    const timeDifference = currentTime - lastSeenTime;
-    const hoursDifference = Math.floor(timeDifference / (1000 * 60 * 60));
-    return hoursDifference;
-}
+
+let zigbeeDeviceState = null;
 
 // Function to fetch Zigbee state data from state.json
 function fetchZigbeeState() {
     fetch('http://localhost:5010/zigbee/state')
     .then(response => response.json())
     .then(data => {
-        console.log('Zigbee state data:', data);  // Log the response data
-        createStateList(data);
+        // console.log('Zigbee state data:', data);  // Log the response data
+        // createStateList(data);
+        zigbeeDeviceState = data;
     })
     .catch(error => console.error('Error fetching Zigbee state:', error));
 }
@@ -338,10 +339,105 @@ function fetchZigbeeDevices() {
     fetch('http://localhost:5010/zigbee/devices')
     .then(response => response.json())
     .then(data => {
-        console.log('Zigbee devices data:', data);  // Log the response data
-        createDatabaseList(data);
+        // console.log('Zigbee devices data:', data);  // Log the response data
+        createDatabaseList(data, zigbeeDeviceState);
     })
     .catch(error => console.error('Error fetching Zigbee devices:', error));
+}
+
+// Function to create dynamic list items for JSON data
+function createDatabaseList(data, stateData) {
+    const listContainer = document.getElementById('dynamic-list');
+    listContainer.innerHTML = ''; // Clear any existing items
+
+    const deviceMap = {
+        0: 'unused',
+        1: 'Light',
+        2: 'Fridge',
+        3: 'CO2 Valve'
+    };
+
+    deviceCounter = 1;
+
+    data.forEach(device => {
+        const foundDeviceKey = Object.keys(stateData).find(key => key === device.ieeeAddr);
+        const foundDevice = stateData[foundDeviceKey];
+        
+        if (foundDevice) {
+            if (deviceCounter >= Object.keys(deviceMap).length) {
+                deviceCounter = 0;
+            }
+            const deviceType = deviceMap[deviceCounter];
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item';
+            // listItem.textContent = `ID: ${device.id}, Type: ${deviceType}, Last Seen: ${calculateLastSeen(device.lastSeen)} seconds ago, IEEE Address: ${device.ieeeAddr}`;
+            listItem.textContent = `${deviceType} socket `;
+            
+            const buttonOn = document.createElement('button');
+            buttonOn.className = 'btn btn-success';
+            buttonOn.textContent = 'on';
+            buttonOn.addEventListener('click', () => {
+                switchPowerSocket(true,device.ieeeAddr)
+            });
+            listItem.appendChild(buttonOn);
+
+            const buttonOff = document.createElement('button');
+            buttonOff.className = 'btn btn-danger';
+            buttonOff.textContent = 'off';
+            buttonOff.addEventListener('click', () => {
+                switchPowerSocket(false,device.ieeeAddr)
+            });
+            listItem.appendChild(buttonOff);
+            
+            listContainer.appendChild(listItem);
+  
+            deviceCounter++;
+        }
+
+    });
+}
+
+function setPowerSocketOverrideToggle(rate, ieeeAddr) {
+    $.ajax({
+        url: '/togglePowerSocketOverride',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({rate: rate, ieeeAddr: ieeeAddr}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+function switchPowerSocket(state, ieeeAddr) {
+    $.ajax({
+        url: '/switchPowerSocket',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({state: state, ieeeAddr: ieeeAddr}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+function calculateLastSeen(lastSeen) {
+    const currentTime = new Date();
+    const lastSeenTime = new Date(lastSeen);
+    const timeDifference = currentTime - lastSeenTime;
+    // const hoursDifference = Math.floor(timeDifference / (1000 * 60 * 60));
+    const secondsDifference = Math.floor(timeDifference / 1000);
+    return secondsDifference;
 }
 
 function fetchCPUTemperature() {

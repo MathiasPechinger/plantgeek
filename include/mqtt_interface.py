@@ -13,33 +13,32 @@ class MQTT_Interface:
         self.client.username_pw_set(user, password)
         self.client.on_connect = self.on_connect
         self.client.on_publish = self.on_publish
-        self.client.on_message = self.on_message
+        # self.client.on_message = self.on_message
         self.client.connect(broker, port, 60)
         self.client.loop_start()  # Start the loop in a separate thread
+        self.manualOverrideTimer = 0
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("Connected to MQTT Broker")
             # Subscribe to the devices topic
             self.client.subscribe("zigbee2mqtt/bridge/devices")
+            self.client.subscribe("zigbee2mqtt/+/availability")
         else:
             print(f"Failed to connect, return code {rc}")
 
     def on_publish(self, client, userdata, mid):
-        print("Message Published")
-
+        # print("Message Published")
+        pass
+        
     def on_message(self, client, userdata, msg):
-        try:
-            payload = json.loads(msg.payload)
-            # print(f"Received message: {json.dumps(payload, indent=2)}")  # Print the received payload
-            if msg.topic == "zigbee2mqtt/bridge/devices":
-                # self.devices = self.extract_device_info(payload)
-                self.devices = self.extract_device_info_extended(payload)
-                print("Devices list updated")
-        except json.JSONDecodeError as e:
-            print(f"Failed to decode JSON: {e}")
-        except Exception as e:
-            print(f"Error in on_message: {e}")
+        if "availability" in msg.topic:
+            device_name = msg.topic.split('/')[1]
+            status = msg.payload.decode()
+            print(f"Device {device_name} is {status}")
+            # Process the device status here (e.g., update your database)
+
+
 
     def extract_device_info(self, devices):
         extracted_info = []
@@ -64,6 +63,21 @@ class MQTT_Interface:
             }
             extracted_info.append(info)
         return extracted_info
+    
+    
+    def mainloop(self,scheduler_mqtt):
+        # self.publish("zigbee2mqtt/bridge/devices", "")
+        self.client.publish("zigbee2mqtt/bridge/request/devices", "") # Request the devices list but it does not really work
+        # self.publish("zigbee2mqtt/0xa4c138c6714a8120/set", '{"state": "ON"}')
+        
+        # If we want to control the sockets manually instead of using the schedule, we reste them here to normal schedule after some time
+        if self.manualOverrideTimer > 0:
+            self.manualOverrideTimer -= 1
+            print(f"Manual Override Timer: {self.manualOverrideTimer}")
+        else:
+            self.manualOverrideTimer = 0
+        
+        scheduler_mqtt.enter(5, 1, self.mainloop,(scheduler_mqtt,))
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)
@@ -78,6 +92,27 @@ class MQTT_Interface:
         TOPIC = "zigbee2mqtt/bridge/request/permit_join"
         payload = '{"value": true}' if enable else '{"value": false}'
         self.client.publish(TOPIC, payload)
+        
+    def toggleOutletWithTimer(self, ieee_address, timer):
+        TOPIC = f"zigbee2mqtt/{ieee_address}/set"
+        payload = f'{{"state": "TOGGLE"}}'
+        self.client.publish(TOPIC, payload)
+        for i in range(timer):
+            time.sleep(1)  # Wait for 1 second
+            self.client.publish(TOPIC, payload)  # Publish the toggle command
+
+    def switch_on(self, ieee_address):
+        TOPIC = f"zigbee2mqtt/{ieee_address}/set"
+        payload = '{"state": "ON"}'
+        self.manualOverrideTimer = 1
+        self.client.publish(TOPIC, payload)
+        
+    def switch_off(self, ieee_address):
+        TOPIC = f"zigbee2mqtt/{ieee_address}/set"
+        payload = '{"state": "OFF"}'
+        self.manualOverrideTimer = 1
+        self.client.publish(TOPIC, payload)
+        
 
     def get_devices(self):
         return self.devices

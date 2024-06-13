@@ -280,6 +280,41 @@ def pump_power():
     pump.set_pump_power(power)
     return jsonify({'status': 'Pump time set to {}'.format(power)})
 
+@app.route('/togglePowerSocketOverride', methods=['POST'])
+def togglePowerSocketOverride():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    rate = request.get_json().get('rate')
+    ieeeAddr = request.get_json().get('ieeeAddr')
+    if rate is None or ieeeAddr is None:
+        return jsonify({'error': 'Missing required parameters'}), 400
+    
+    toggleTimer = 10 
+    mqtt_interface.toggleOutletWithTimer(ieeeAddr, toggleTimer)
+    
+    return jsonify({'status': 'toggleoutput of {}'.format(ieeeAddr)})
+
+@app.route('/switchPowerSocket', methods=['POST'])
+def switchPowerSocket():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    state = request.get_json().get('state')
+    ieeeAddr = request.get_json().get('ieeeAddr')
+    if state is None or ieeeAddr is None:
+        return jsonify({'error': 'Missing required parameters'}), 400
+    
+    if state == True:
+        mqtt_interface.switch_on(ieeeAddr)
+    else:
+        mqtt_interface.switch_off(ieeeAddr)
+    
+    return jsonify({'status': 'toggleoutput of {}'.format(ieeeAddr)})
+
+
+
+
 @app.route('/activatePumpOnce', methods=['POST'])
 def pump_once():
     pump.pump_for_time()
@@ -333,6 +368,7 @@ if __name__ == '__main__':
     scheduler_fridge = sched.scheduler(time.time, time.sleep)
     scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
+    scheduler_mqtt = sched.scheduler(time.time, time.sleep)
         
     fan = Fan(PWMOutputDevice(13), 50) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
@@ -350,6 +386,7 @@ if __name__ == '__main__':
     scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
+    scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt,))
 
     light.turn_light_off()
     co2.close_co2_valve()
@@ -359,7 +396,8 @@ if __name__ == '__main__':
         threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
         threading.Thread(target=run_scheduler, args=(scheduler_light,)),
         threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,))
+        threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
+        threading.Thread(target=run_scheduler, args=(scheduler_mqtt,))
     ]
 
     for thread in threads:
