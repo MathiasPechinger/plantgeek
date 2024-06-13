@@ -382,13 +382,13 @@ if __name__ == '__main__':
     sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
     sensor_data_logger_thread.start()
     
-    scheduler_light.enter(0, 1, light.check_time_and_control_light, (scheduler_light,))
+    scheduler_light.enter(0, 1, light.check_time_and_control_light, (scheduler_light,mqtt_interface,))
     scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt,))
 
-    light.turn_light_off()
+    light.turn_light_off(mqtt_interface)
     co2.close_co2_valve()
     fridge.switch_off()
 

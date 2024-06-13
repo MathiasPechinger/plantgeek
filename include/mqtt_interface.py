@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 import json
 import time
+import requests
 
 class MQTT_Interface:
     def __init__(self, broker, port, user, password):
@@ -17,6 +18,53 @@ class MQTT_Interface:
         self.client.connect(broker, port, 60)
         self.client.loop_start()  # Start the loop in a separate thread
         self.manualOverrideTimer = 0
+        self.manualOverrideActive = False
+        self.lightSocketID = ""
+        self.fridgeSocketID = ""
+        self.CO2SocketID = ""
+        self.zigbeeState = ""
+        self.zigbeeDevices = ""
+
+
+
+    
+    def fetch_zigbee_state(self):
+        try:
+            response = requests.get('http://localhost:5010/zigbee/state')
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            self.zigbeeState = response.json()
+        except requests.exceptions.RequestException as error:
+            print(f'Error fetching Zigbee devices: {error}')
+    
+    def fetch_zigbee_devices(self):
+        try:
+            response = requests.get('http://localhost:5010/zigbee/devices')
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            self.zigbeeDevices = response.json()
+        except requests.exceptions.RequestException as error:
+            print(f'Error fetching Zigbee devices: {error}')
+        
+
+    # todo: this should be in an additonal database later on. so we can make sure it does not change on startup
+    def update_database_list(self):
+        try:
+            matching_devices = []
+            for device in self.zigbeeDevices:
+                ieee_address = device.get("ieeeAddr")
+                for state_addr in self.zigbeeState:
+                    if state_addr == ieee_address:
+                        matching_devices.append(device)
+                        break
+            
+            self.lightSocketID = matching_devices[0].get("ieeeAddr")
+            self.fridgeSocketID = matching_devices[1].get("ieeeAddr")
+            
+            # print(f"Light Socket ID: {self.lightSocketID}")
+            # print(f"Fridge Socket ID: {self.fridgeSocketID}")
+            
+        except Exception as e:
+            print(f"Error in update_database_list: {e}")
+
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -66,6 +114,11 @@ class MQTT_Interface:
     
     
     def mainloop(self,scheduler_mqtt):
+        self.fetch_zigbee_state()
+        self.fetch_zigbee_devices()
+
+        self.update_database_list()
+        
         # self.publish("zigbee2mqtt/bridge/devices", "")
         self.client.publish("zigbee2mqtt/bridge/request/devices", "") # Request the devices list but it does not really work
         # self.publish("zigbee2mqtt/0xa4c138c6714a8120/set", '{"state": "ON"}')
@@ -73,11 +126,12 @@ class MQTT_Interface:
         # If we want to control the sockets manually instead of using the schedule, we reste them here to normal schedule after some time
         if self.manualOverrideTimer > 0:
             self.manualOverrideTimer -= 1
-            print(f"Manual Override Timer: {self.manualOverrideTimer}")
+            # print(f"Manual Override Timer: {self.manualOverrideTimer}")
         else:
             self.manualOverrideTimer = 0
+            self.manualOverrideActive = False
         
-        scheduler_mqtt.enter(5, 1, self.mainloop,(scheduler_mqtt,))
+        scheduler_mqtt.enter(1, 1, self.mainloop,(scheduler_mqtt,))
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)
@@ -104,14 +158,39 @@ class MQTT_Interface:
     def switch_on(self, ieee_address):
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
         payload = '{"state": "ON"}'
-        self.manualOverrideTimer = 1
+        self.manualOverrideTimer = 10
         self.client.publish(TOPIC, payload)
+        self.manualOverrideActive = True
         
     def switch_off(self, ieee_address):
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
         payload = '{"state": "OFF"}'
-        self.manualOverrideTimer = 1
+        self.manualOverrideTimer = 10
         self.client.publish(TOPIC, payload)
+        self.manualOverrideActive = True
+        
+        
+        
+    def setFridgeState(self, state):
+        TOPIC = f"zigbee2mqtt/{self.fridgeSocketID}/set"
+        if state == True:
+            payload = '{"state": "ON"}'
+        else:
+            payload = '{"state": "OFF"}'
+        self.client.publish(TOPIC, payload)
+        
+    def setLightState(self, state):
+        if self.manualOverrideActive:
+            return
+        else:
+            TOPIC = f"zigbee2mqtt/{self.lightSocketID}/set"
+            if state == True:
+                payload = '{"state": "ON"}'
+            else:
+                payload = '{"state": "OFF"}'
+            self.client.publish(TOPIC, payload)
+        
+
         
 
     def get_devices(self):
