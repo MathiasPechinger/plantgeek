@@ -308,9 +308,18 @@ function createDatabaseList(data) {
     data.forEach(device => {
         const listItem = document.createElement('li');
         listItem.className = 'list-group-item';
-        listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${device.lastSeen}, IEEE Address: ${device.ieeeAddr}`;
+        listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${calculateLastSeen(device.lastSeen)} hours ago, IEEE Address: ${device.ieeeAddr}`;
+        // listItem.textContent = `ID: ${device.id}, Type: ${device.type}, Last Seen: ${device.lastSeen}, IEEE Address: ${device.ieeeAddr}`;
         listContainer.appendChild(listItem);
     });
+}
+
+function calculateLastSeen(lastSeen) {
+    const currentTime = new Date();
+    const lastSeenTime = new Date(lastSeen);
+    const timeDifference = currentTime - lastSeenTime;
+    const hoursDifference = Math.floor(timeDifference / (1000 * 60 * 60));
+    return hoursDifference;
 }
 
 // Function to fetch Zigbee state data from state.json

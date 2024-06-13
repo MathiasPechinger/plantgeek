@@ -1,5 +1,9 @@
 #!/bin/bash
 
+sudo apt-get update
+sudo apt-get install libraspberrypi-bin ffmpeg
+
+
 # Update package list
 cd ip_cam
 npm install
