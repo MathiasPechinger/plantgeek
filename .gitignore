@@ -4,6 +4,7 @@ old/
 venv/
 .lgd-nfy0
 ip_cam/node_modules/
+mqtt_webserver/node_modules/
 *.png
 *.log
 

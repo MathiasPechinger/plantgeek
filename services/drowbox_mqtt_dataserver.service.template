@@ -1,0 +1,14 @@
+[Unit]
+Description=Node.js Application Service
+After=network.target
+
+[Service]
+Type=simple
+User={{USERNAME}}
+WorkingDirectory={{WORKING_DIR}}
+ExecStart={{EXEC_START}} {{SCRIPT_PATH}}
+Restart=on-failure
+Environment=NODE_ENV=production 
+
+[Install]
+WantedBy=multi-user.target
