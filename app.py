@@ -372,7 +372,7 @@ if __name__ == '__main__':
         
     fan = Fan(PWMOutputDevice(13), 50) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
-    fridge = Fridge(OutputDevice(16),db_config)  # GPIO pin 16, where fridge is connected
+    fridge = Fridge(db_config) 
     light = Light(db_config)
     co2 = CO2()
     
@@ -383,14 +383,14 @@ if __name__ == '__main__':
     sensor_data_logger_thread.start()
     
     scheduler_light.enter(0, 1, light.check_time_and_control_light, (scheduler_light,mqtt_interface,))
-    scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,))
+    scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,mqtt_interface,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt,))
 
     light.turn_light_off(mqtt_interface)
     co2.close_co2_valve()
-    fridge.switch_off()
+    fridge.switch_off(mqtt_interface)
 
     threads = [
         threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),

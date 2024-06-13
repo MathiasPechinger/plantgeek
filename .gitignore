@@ -9,3 +9,4 @@ ip_cam/node_modules/
 
 *.service
 __pycache__/
+ip_cam/public/image.jpg
