@@ -6,20 +6,22 @@ class Light:
         self.lightState = False
         self.db_config = db_config
         self.light_on_time = datetime.time(8, 0)
-        self.light_off_time = datetime.time(22, 0)
+        self.light_off_time = datetime.time(23, 0)
         
     def turn_light_on(self,mqtt_interface):
-
-        # only send mqtt message if light is off        
-        if not self.lightState:
-            mqtt_interface.setLightState(True)
-            self.lightState = True
-
+        # print(f"Light state: {self.lightState}")
+        # only send mqtt message if light is off   
+        if not mqtt_interface.getLightState():
+            success = mqtt_interface.setLightState(True)
+            if success:
+                self.lightState = True
+                
     def turn_light_off(self,mqtt_interface):
         # only send mqtt message if light is on
-        if self.lightState:
-            self.lightState = False
-            mqtt_interface.setLightState(False)
+        if mqtt_interface.getLightState():
+            success = mqtt_interface.setLightState(False)
+            if success:
+                self.lightState = False
 
         
     def set_light_times(self, on_time_str, off_time_str):
