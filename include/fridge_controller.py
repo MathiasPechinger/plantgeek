@@ -11,11 +11,14 @@ class Fridge:
         self.hysteresis = 0.7
         
     def switch_on(self, mqtt_interface):
-        minimum_off_time = 10
+        minimum_off_time = 120
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
-            self.is_on = True
             self.off_time = None
-            mqtt_interface.setFridgeState(True)        
+            # only send mqtt message if fridge is off
+            if not self.is_on: 
+                self.is_on = True
+                print("switching on fridge")
+                mqtt_interface.setFridgeState(True)        
             
         else:
             print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
@@ -23,9 +26,12 @@ class Fridge:
             print(f"Please wait for {remaining_time} seconds before switching on again.")
 
     def switch_off(self, mqtt_interface):
-        self.is_on = False
         self.off_time = datetime.datetime.now()
-        mqtt_interface.setFridgeState(False)        
+        
+        if self.is_on:
+            self.is_on = False
+            print("switching off fridge")
+            mqtt_interface.setFridgeState(False)        
         
     def control_fridge(self, sc, mqtt_interface):
         temp = self.get_current_temp()

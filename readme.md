@@ -62,3 +62,7 @@ sudo apt install phpmyadmin -y
 ```
 sudo apt-get install git curl build-essential
 ```
+
+# known issues:
+
+* if the state.json is empty, it will crash

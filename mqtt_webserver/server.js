@@ -21,7 +21,14 @@ app.get('/zigbee/state', (req, res) => {
             res.status(500).json({ error: 'Failed to read state.json' });
             return;
         }
-        res.json(JSON.parse(data));
+
+        try {
+            const jsonData = JSON.parse(data);
+            res.json(jsonData);
+        } catch (parseError) {
+            console.error('Error parsing state.json:', parseError);
+            res.status(500).json({ error: 'Failed to parse state.json' });
+        }
     });
 });
 
@@ -31,17 +38,24 @@ app.get('/zigbee/devices', (req, res) => {
 
     fs.readFile(dbFilePath, 'utf8', (err, data) => {
         if (err) {
-            console.error('Error reading database.json:', err);
-            res.status(500).json({ error: 'Failed to read database.json' });
+            console.error('Error reading database.db:', err);
+            res.status(500).json({ error: 'Failed to read database.db' });
             return;
         }
 
         try {
-            const devices = data.trim().split('\n').map(JSON.parse);
+            const devices = data.trim().split('\n').map((line) => {
+                try {
+                    return JSON.parse(line);
+                } catch (parseError) {
+                    console.error('Error parsing line in database.db:', parseError);
+                    throw new Error('Invalid JSON format in database.db');
+                }
+            });
             res.json(devices);
-        } catch (parseError) {
-            console.error('Error parsing database.json:', parseError);
-            res.status(500).json({ error: 'Failed to parse database.json' });
+        } catch (error) {
+            console.error('Error processing database.db:', error);
+            res.status(500).json({ error: 'Failed to process database.db' });
         }
     });
 });

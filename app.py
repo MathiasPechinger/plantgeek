@@ -353,9 +353,9 @@ def start_sensor_data_logger():
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
-def start_mqtt_interface():
-    global mqtt_interface
-    mqtt_interface.loop_forever()
+# def start_mqtt_interface():
+#     global mqtt_interface
+#     mqtt_interface.loop_forever()
 
 
 
@@ -376,8 +376,8 @@ if __name__ == '__main__':
     light = Light(db_config)
     co2 = CO2()
     
-    mqtt_interface_thread = threading.Thread(target=start_mqtt_interface)
-    mqtt_interface_thread.start()
+    # mqtt_interface_thread = threading.Thread(target=start_mqtt_interface)
+    # mqtt_interface_thread.start()
     
     sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
     sensor_data_logger_thread.start()
