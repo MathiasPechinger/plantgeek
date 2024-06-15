@@ -28,17 +28,13 @@ class Fridge:
         
         self.off_time = datetime.datetime.now()
         
-        print("mqtt_interface.getFridgeState()",mqtt_interface.getFridgeState())
-        
         if mqtt_interface.getFridgeState():
-            print("Switching off fridge ....////()/")
             success = mqtt_interface.setFridgeState(False)        
             if success:
                 self.is_on = False
         
     def control_fridge(self, sc, mqtt_interface):
         temp = self.get_current_temp()
-        print(f"Current temperature: {temp}")
                 
         if temp == -999:
             self.switch_off(mqtt_interface)
@@ -52,10 +48,8 @@ class Fridge:
             return
         
         if temp > self.controlTemperature:
-            print("Switching on fridge")
             self.switch_on(mqtt_interface)
         elif temp < self.controlTemperature - self.hysteresis:
-            print("Switching off fridge")
             self.switch_off(mqtt_interface)
         sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
         

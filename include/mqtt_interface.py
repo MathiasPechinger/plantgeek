@@ -52,6 +52,7 @@ class MQTT_Interface:
         self.fridgeSocket = SocketDevice(DeviceType.FRIDGE)
         self.co2Socket = SocketDevice(DeviceType.CO2)
         self.devices = [self.lightSocket, self.fridgeSocket, self.co2Socket]
+        self.initDone = False
 
     def start_mqtt_loop(self):
         mqtt_thread = threading.Thread(target=self.client.loop_forever)
@@ -128,16 +129,27 @@ class MQTT_Interface:
                         matching_devices.append(device)
                         break              
             
+            
+            states = {device_id: info['state'] for device_id, info in self.zigbeeState.items()}
+            print("States: ", states)
+            
+
             if len(matching_devices) == 1:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
+                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
             elif len(matching_devices) == 2:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
+                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
                 self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
+                self.devices[1].state = states.get(matching_devices[1].get("ieeeAddr"))
             elif len(matching_devices) == 3:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
+                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
                 self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
+                self.devices[1].state = states.get(matching_devices[1].get("ieeeAddr"))
                 self.devices[2].friendly_name = matching_devices[2].get("ieeeAddr")
-                
+                self.devices[2].state = states.get(matching_devices[2].get("ieeeAddr"))
+
         except Exception as e:
             print(f"Error in update_database_list: {e}")
 
@@ -151,7 +163,9 @@ class MQTT_Interface:
 
         self.fetch_zigbee_state()
         self.fetch_zigbee_devices()
-        self.update_database_list()
+        if not self.initDone:
+            self.update_database_list()
+            self.initDone = True
         
         # Check if manual override is active
         for device in self.devices:
@@ -213,7 +227,6 @@ class MQTT_Interface:
     #     self.client.publish(TOPIC, payload)
     
     def setFridgeState(self, state):
-        print("Setting fridge state->>>>>>>")
         if self.devices[1].friendly_name == "":
             # No light socket found, intializing
             print("No fridge socket found")
@@ -224,7 +237,6 @@ class MQTT_Interface:
                 print("Fridge is in manual override mode")
                 pass
             else:
-                print("Fridge state: ", state)
                 TOPIC = f"zigbee2mqtt/{self.devices[1].friendly_name}/set"
                 payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
                 self.client.publish(TOPIC, payload)
