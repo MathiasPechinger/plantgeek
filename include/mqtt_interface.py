@@ -108,7 +108,10 @@ class MQTT_Interface:
                     if device.friendly_name == device_name:
                         state = json.loads(messagePayload).get("state")
                         if state is not None:
-                            device.state = state
+                            if state == "ON":
+                                device.state = True
+                            else:
+                                device.state = False
                             device.internalLastSeen = time.time()
                             # print(f"Device: {device.friendly_name}, State: {device.state}, Last seen: {device.internalLastSeen}")
                         else:
@@ -181,21 +184,21 @@ class MQTT_Interface:
     
     def checkDeviceAvailability(self, friendly_name):
         for device in self.devices:
-            TIMEOUT_THRESHOLD = 10
+            TIMEOUT_THRESHOLD = 20
             if device.friendly_name == friendly_name:
                 current_time = time.time()
                 if device.internalLastSeen is not None:
                     timeDiffrence = current_time - device.internalLastSeen
-                    print("Time diffrence: ", timeDiffrence)
+                    # print("Time diffrence: ", timeDiffrence)
                     if device.internalLastSeen is not None and timeDiffrence > TIMEOUT_THRESHOLD:
                         device.availability = False
                     else:
                         device.availability = True
-                    print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                    # print("Device: ", device.friendly_name, "Availability: ", device.availability)
                 else:
                     device.availability = False
                     
-                print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                # print("Device: ", device.friendly_name, "Availability: ", device.availability)
                     
                 
         return None
@@ -234,14 +237,15 @@ class MQTT_Interface:
         # self.publish('zigbee2mqtt/bridge/request/health_check', '')
         # self.client.subscribe('zigbee2mqtt/bridge/response/health_check')
         
-        # Print last seen for all devices
-        for device in self.devices:
-            print(f"{device.friendly_name} - Last Seen: {device.internalLastSeen}")
+        # # Print last seen for all devices
+        # for device in self.devices:
+            # print(f"{device.friendly_name} - Last Seen: {device.internalLastSeen}")
         
         
 
         self.fetch_zigbee_state()
         self.fetch_zigbee_devices()
+        
         if not self.initDone:
             self.update_database_list()
             self.initDone = True
@@ -254,8 +258,25 @@ class MQTT_Interface:
                 device.manualOverrideTimer = 0
                 device.manualOverrideActive = False
                 
-        health = self.checkBridgeHealth()
-        print("Bridge health: ", health)
+        healthy = self.checkBridgeHealth()
+        if not healthy:
+            print("Bridge is not healthy!")
+            print("Shutting down alle sockets, with manual override")
+            self.switch_off(self.devices[0].friendly_name)
+            self.switch_off(self.devices[1].friendly_name)
+            self.switch_off(self.devices[2].friendly_name)
+            # todo restart the system in correct states!!
+        
+        print("--------------------------------------------------")
+        print("Devices healthy: ", self.devicesHealthy)
+        print("Devices availability: ", self.devices[0].availability, self.devices[1].availability, self.devices[2].availability)
+        print("Devices state: ", self.devices[0].state, self.devices[1].state, self.devices[2].state)
+        print("Devices manual override: ", self.devices[0].manualOverrideActive, self.devices[1].manualOverrideActive, self.devices[2].manualOverrideActive)
+        print("Devices manual override timer: ", self.devices[0].manualOverrideTimer, self.devices[1].manualOverrideTimer, self.devices[2].manualOverrideTimer)
+        print("Devices friendly name: ", self.devices[0].friendly_name, self.devices[1].friendly_name, self.devices[2].friendly_name)
+        print("--------------------------------------------------")
+        
+            
 
         scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt,))
 
