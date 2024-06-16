@@ -18,6 +18,7 @@ class SocketDevice:
         self.friendly_name = ""
         self.availability = False
         self.state = False
+        self.internalLastSeen = None
         self.manualOverrideTimer = 0
         self.manualOverrideActive = False
 
@@ -53,6 +54,7 @@ class MQTT_Interface:
         self.co2Socket = SocketDevice(DeviceType.CO2)
         self.devices = [self.lightSocket, self.fridgeSocket, self.co2Socket]
         self.initDone = False
+        self.devicesHealthy = False
 
     def start_mqtt_loop(self):
         mqtt_thread = threading.Thread(target=self.client.loop_forever)
@@ -76,25 +78,41 @@ class MQTT_Interface:
                 time.sleep(5)
 
     def on_publish(self, client, userdata, mid):
-        print("Message published")
-        pass   
+        # print("Message published")
+        pass
 
     def on_message(self, client, userdata, msg):
         try:
+            # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
             # Availability messages
             if "availability" in msg.topic:
-                
                 device_name = msg.topic.split('/')[1]
                 status = msg.payload.decode()
-                
                 if status == "online":
                     statusBool = True
                 else:
                     statusBool = False
-                
                 for device in self.devices:
                     if device.friendly_name == device_name:
-                        device.availability = statusBool
+                        # THIS DOES NOT WORK, I DONT KNOW WHY
+                        # THE MQTT BACKEND DOES NOT GIVE THE CORRECT AVAILABILITY STATUS
+                        # device.availability = statusBool
+                        # print(f"Device: {device.friendly_name}, Availability: {device.availability}")
+                        break
+            else:
+                # process other messages
+                # my sockets do not attach the "/state" so i have to check for the device name
+                messagePayload = msg.payload.decode()
+                device_name = msg.topic.split('/')[1]
+                for device in self.devices:
+                    if device.friendly_name == device_name:
+                        state = json.loads(messagePayload).get("state")
+                        if state is not None:
+                            device.state = state
+                            device.internalLastSeen = time.time()
+                            # print(f"Device: {device.friendly_name}, State: {device.state}, Last seen: {device.internalLastSeen}")
+                        else:
+                            print("Error: No state found in payload")
                         break
         except Exception as e:
             print(f"Error in on_message: {e}, Topic: {msg.topic}, Payload: {msg.payload}")
@@ -118,7 +136,6 @@ class MQTT_Interface:
     # This function is used to update the list of devices in the database
     # todo this is not modular, it should be done in a better way
     def update_database_list(self):
-        
         # print("Updating database list")
         try:
             matching_devices = []
@@ -127,46 +144,108 @@ class MQTT_Interface:
                 for state_addr in self.zigbeeState:
                     if state_addr == ieee_address:
                         matching_devices.append(device)
-                        break              
-            
-            
+                        break
+
+
             states = {device_id: info['state'] for device_id, info in self.zigbeeState.items()}
             print("States: ", states)
-            
+
 
             if len(matching_devices) == 1:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
             elif len(matching_devices) == 2:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
                 self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
-                self.devices[1].state = states.get(matching_devices[1].get("ieeeAddr"))
             elif len(matching_devices) == 3:
                 self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-                self.devices[0].state = states.get(matching_devices[0].get("ieeeAddr"))
                 self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
-                self.devices[1].state = states.get(matching_devices[1].get("ieeeAddr"))
                 self.devices[2].friendly_name = matching_devices[2].get("ieeeAddr")
-                self.devices[2].state = states.get(matching_devices[2].get("ieeeAddr"))
 
         except Exception as e:
             print(f"Error in update_database_list: {e}")
+            
+    def requestDeviceStateUpdate(self, friendly_name):
+        TOPIC = f"zigbee2mqtt/{friendly_name}/get"
+        payload = '{"state": ""}'
+        self.publish(TOPIC, payload)
+        SUB_TOPIC = f"zigbee2mqtt/{friendly_name}"
+        # SUB_TOPIC = "#" # good for debugging, check all messages
+        self.client.subscribe(SUB_TOPIC)
+        
+        
+    def getDeviceState(self, friendly_name):
+        for device in self.devices:
+            if device.friendly_name == friendly_name:
+                return device.state
+        return None
+    
+    def checkDeviceAvailability(self, friendly_name):
+        for device in self.devices:
+            TIMEOUT_THRESHOLD = 10
+            if device.friendly_name == friendly_name:
+                current_time = time.time()
+                if device.internalLastSeen is not None:
+                    timeDiffrence = current_time - device.internalLastSeen
+                    print("Time diffrence: ", timeDiffrence)
+                    if device.internalLastSeen is not None and timeDiffrence > TIMEOUT_THRESHOLD:
+                        device.availability = False
+                    else:
+                        device.availability = True
+                    print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                else:
+                    device.availability = False
+                    
+                print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                    
+                
+        return None
+    
+    def checkBridgeHealth(self):
+        for device in self.devices:
+            if not device.availability:
+                self.devicesHealthy = False
+                return False
+            elif self.devices[0].availability == True and self.devices[1].availability == True and self.devices[2].availability == True:
+                self.devicesHealthy = True
+                return True
+                    
 
     def mainloop(self, scheduler_mqtt):
         if self.availabiltyCheckCounter <= 0:
-            self.client.subscribe("zigbee2mqtt/+/availability")
-            self.client.subscribe("zigbee2mqtt/+/state")
+            # self.client.subscribe("zigbee2mqtt/+/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.devices[0].friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.devices[1].friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.devices[2].friendly_name}/availability")
+            # self.client.subscribe("zigbee2mqtt/bridge/devices") # get device information
+
             self.availabiltyCheckCounter = 2
         else:
             self.availabiltyCheckCounter -= 1
+
+        self.requestDeviceStateUpdate(self.devices[0].friendly_name)
+        self.requestDeviceStateUpdate(self.devices[1].friendly_name)
+        self.requestDeviceStateUpdate(self.devices[2].friendly_name)
+        
+        self.checkDeviceAvailability(self.devices[0].friendly_name)
+        self.checkDeviceAvailability(self.devices[1].friendly_name)
+        self.checkDeviceAvailability(self.devices[2].friendly_name)
+        
+        # add checks for this some other time
+        # self.publish('zigbee2mqtt/bridge/request/health_check', '')
+        # self.client.subscribe('zigbee2mqtt/bridge/response/health_check')
+        
+        # Print last seen for all devices
+        for device in self.devices:
+            print(f"{device.friendly_name} - Last Seen: {device.internalLastSeen}")
+        
+        
 
         self.fetch_zigbee_state()
         self.fetch_zigbee_devices()
         if not self.initDone:
             self.update_database_list()
             self.initDone = True
-        
+
         # Check if manual override is active
         for device in self.devices:
             if device.manualOverrideTimer > 0:
@@ -174,6 +253,9 @@ class MQTT_Interface:
             else:
                 device.manualOverrideTimer = 0
                 device.manualOverrideActive = False
+                
+        health = self.checkBridgeHealth()
+        print("Bridge health: ", health)
 
         scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt,))
 
@@ -220,12 +302,7 @@ class MQTT_Interface:
                 deviceFound = True
         if not deviceFound:
             print("ERROR: Device not found")
-            
-    # def setFridgeState(self, state):
-    #     TOPIC = f"zigbee2mqtt/{self.fridgeSocketID}/set"
-    #     payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
-    #     self.client.publish(TOPIC, payload)
-    
+
     def setFridgeState(self, state):
         if self.devices[1].friendly_name == "":
             # No light socket found, intializing
@@ -242,10 +319,10 @@ class MQTT_Interface:
                 self.client.publish(TOPIC, payload)
                 self.devices[1].state = state
             return True
-        
+
     def getFridgeState(self):
         return self.devices[1].state
-        
+
     def getLightState(self):
         return self.devices[0].state
 
