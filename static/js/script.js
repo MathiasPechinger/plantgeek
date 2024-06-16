@@ -123,22 +123,6 @@ function setFanSpeed(speed) {
 
 updateTime(); // Initialize the time update
 
-function toggleLight(state) {
-    $.ajax({
-        url: '/light/control',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({state: state}),
-        success: function(response) {
-            // console.log("Response: " + JSON.stringify(response));
-        },
-        error: function(xhr, status, error) {
-            console.log("Error: " + error);
-            console.log("Status: " + status);
-            console.dir(xhr);
-        }
-    });
-}
 
 function requestCO2(state) {
     $.ajax({
@@ -324,7 +308,7 @@ let zigbeeDeviceState = null;
 
 // Function to fetch Zigbee state data from state.json
 function fetchZigbeeState() {
-    fetch('http://localhost:5010/zigbee/state')
+    fetch('http://192.168.2.167:5010/zigbee/state')
     .then(response => response.json())
     .then(data => {
         // console.log('Zigbee state data:', data);  // Log the response data
@@ -336,7 +320,7 @@ function fetchZigbeeState() {
 
 // Function to fetch Zigbee device data from the JSON file
 function fetchZigbeeDevices() {
-    fetch('http://localhost:5010/zigbee/devices')
+    fetch('http://192.168.2.167:5010/zigbee/devices')
     .then(response => response.json())
     .then(data => {
         // console.log('Zigbee devices data:', data);  // Log the response data

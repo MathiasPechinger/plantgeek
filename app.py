@@ -17,6 +17,7 @@ from include.co2_controller import CO2
 from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
+from include.health_monitoring import HealthMonitor
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -102,23 +103,6 @@ def set_light_times():
     response = light.set_light_times(on_time_str, off_time_str)
     return jsonify(response)
 
-
-@app.route('/light/control', methods=['POST'])
-def light_control():
-    return jsonify({'status': 'Light control not implemented'})
-    # if not request.is_json:
-    #     return jsonify({'error': 'Missing JSON in request'}), 400
-
-    # state = request.get_json().get('state')
-    # if state is None:
-    #     return jsonify({'error': 'Missing required parameter'}), 400
-
-    # if state:
-    #     turn_light_on()
-    # else:
-    #     turn_light_off()
-
-    # return jsonify({'status': 'light turned ON' if state else 'light turned OFF'})
 
 @app.route('/co2/control', methods=['POST'])
 def co2_control():
@@ -347,9 +331,11 @@ def run_scheduler(scheduler):
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
+sensorData = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
+
 def start_sensor_data_logger():
-    logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
-    logger.run()
+    global sensorData
+    sensorData.run()
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
@@ -369,15 +355,14 @@ if __name__ == '__main__':
     scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
+    scheduler_health = sched.scheduler(time.time, time.sleep)
         
     fan = Fan(PWMOutputDevice(13), 50) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
     fridge = Fridge(db_config) 
     light = Light(db_config)
     co2 = CO2()
-    
-    # mqtt_interface_thread = threading.Thread(target=start_mqtt_interface)
-    # mqtt_interface_thread.start()
+    systemHealth = HealthMonitor()
     
     sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
     sensor_data_logger_thread.start()
@@ -387,6 +372,7 @@ if __name__ == '__main__':
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt,))
+    scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
 
     light.turn_light_off(mqtt_interface)
     co2.close_co2_valve()
@@ -397,7 +383,8 @@ if __name__ == '__main__':
         threading.Thread(target=run_scheduler, args=(scheduler_light,)),
         threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
         threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_mqtt,))
+        threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
+        threading.Thread(target=run_scheduler, args=(scheduler_health,))
     ]
 
     for thread in threads:

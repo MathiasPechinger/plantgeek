@@ -7,7 +7,7 @@ class Fridge:
         self.is_on = False
         self.off_time = None
         self.db_config = db_config
-        self.controlTemperature = 29.5
+        self.controlTemperature = 27.5
         self.hysteresis = 0.7
         
     def switch_on(self, mqtt_interface):

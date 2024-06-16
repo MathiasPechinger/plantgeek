@@ -21,6 +21,10 @@ class SensorDataLogger:
         self.sensor = None
         self.dht_device = None
         self.scd4x = None
+        self.currentTemperature = None
+        self.currentHumidity = None
+        self.currentCO2 = None
+        self.lastTimestamp = None
 
         logging.basicConfig(filename='logs/data_writer.log', filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
 
@@ -100,6 +104,12 @@ class SensorDataLogger:
                 data_available = True
             elif self.use_scd41:
                 if self.scd4x.data_ready:
+                    
+                    self.currentTemperature = self.scd4x.temperature
+                    self.currentHumidity = self.scd4x.relative_humidity
+                    self.currentCO2 = self.scd4x.CO2
+                    self.lastTimestamp = time.time()
+                    
                     data = (
                         self.scd4x.temperature,
                         self.scd4x.temperature * (9 / 5) + 32,

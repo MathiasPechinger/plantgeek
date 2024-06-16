@@ -9,7 +9,6 @@ class Light:
         self.light_off_time = datetime.time(23, 0)
         
     def turn_light_on(self,mqtt_interface):
-        # print(f"Light state: {self.lightState}")
         # only send mqtt message if light is off   
         if not mqtt_interface.getLightState():
             success = mqtt_interface.setLightState(True)
