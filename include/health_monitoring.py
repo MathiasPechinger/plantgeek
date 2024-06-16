@@ -50,7 +50,7 @@ class HealthMonitor:
         sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
 
     def get_status(self):
-        return self.status
+        return self.systemHealthy
 
-    def set_status(self, status):
-        self.status = status
+    # def set_status(self, status):
+    #     self.status = status

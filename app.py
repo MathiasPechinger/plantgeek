@@ -371,7 +371,7 @@ if __name__ == '__main__':
     scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,mqtt_interface,))
     scheduler_sensorCheck.enter(0, 1, check_sensors)
     scheduler_databaseCheck.enter(0, 1, check_database)
-    scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt,))
+    scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt, systemHealth,))
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
 
     light.turn_light_off(mqtt_interface)

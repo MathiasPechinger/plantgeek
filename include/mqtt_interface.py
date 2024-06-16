@@ -203,17 +203,15 @@ class MQTT_Interface:
                 
         return None
     
-    def checkBridgeHealth(self):
+    def updateBridgeHealth(self):
         for device in self.devices:
             if not device.availability:
                 self.devicesHealthy = False
-                return False
             elif self.devices[0].availability == True and self.devices[1].availability == True and self.devices[2].availability == True:
                 self.devicesHealthy = True
-                return True
                     
 
-    def mainloop(self, scheduler_mqtt):
+    def mainloop(self, scheduler_mqtt, systemHealth):
         if self.availabiltyCheckCounter <= 0:
             # self.client.subscribe("zigbee2mqtt/+/availability")
             self.client.subscribe(f"zigbee2mqtt/{self.devices[0].friendly_name}/availability")
@@ -259,14 +257,12 @@ class MQTT_Interface:
                 device.manualOverrideActive = False
         
         
-        healthy = self.checkBridgeHealth()
-        if not healthy:
-            print("Bridge is not healthy!")
-            print("Shutting down alle sockets, with manual override")
+        self.updateBridgeHealth()
+        
+        if not systemHealth.systemHealthy:
             self.switch_off(self.devices[0].friendly_name)
             self.switch_off(self.devices[1].friendly_name)
             self.switch_off(self.devices[2].friendly_name)
-            # todo restart the system in correct states!!
         
         mqttInterfaceDebugging = False
         if (mqttInterfaceDebugging):
@@ -279,7 +275,7 @@ class MQTT_Interface:
             print("Devices friendly name: ", self.devices[0].friendly_name, self.devices[1].friendly_name, self.devices[2].friendly_name)
             print("--------------------------------------------------")
         
-        scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt,))
+        scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt, systemHealth,))
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)
