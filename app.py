@@ -357,7 +357,7 @@ if __name__ == '__main__':
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
         
-    fan = Fan(PWMOutputDevice(13), 50) 
+    fan = Fan(PWMOutputDevice(13), 90) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
     fridge = Fridge(db_config) 
     light = Light(db_config)

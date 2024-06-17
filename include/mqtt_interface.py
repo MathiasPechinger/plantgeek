@@ -199,15 +199,41 @@ class MQTT_Interface:
                     device.availability = False
                     
                 # print("Device: ", device.friendly_name, "Availability: ", device.availability)
-                    
-                
         return None
+    
+    def removeDevice(self, friendly_name):
+        print("trying_to_remove_device")
+        for device in self.devices:
+            if device.friendly_name == friendly_name:
+                device.friendly_name = ""
+                device.availability = False
+                device.state = False
+                device.internalLastSeen = None
+                device.manualOverrideTimer = 0
+                device.manualOverrideActive = False
+                
+                print("Device removed"+device.friendly_name)
+                
+                TOPIC = "zigbee2mqtt/bridge/request/device/remove"
+                payload = '{"id": "' + device.friendly_name + '"}'
+                print("Payload: ", payload)
+                self.publish(TOPIC, payload)
+                print(f"Device {device.friendly_name} removed")
+                return True
+        return False
     
     def updateBridgeHealth(self):
         for device in self.devices:
             if not device.availability:
                 self.devicesHealthy = False
             elif self.devices[0].availability == True and self.devices[1].availability == True and self.devices[2].availability == True:
+                self.devicesHealthy = True
+                
+    def updateBridgeHealthNoDevice2(self):
+        for device in self.devices:
+            if self.devices[0].availability == False or self.devices[1].availability == False:
+                self.devicesHealthy = False
+            elif self.devices[0].availability == True and self.devices[1].availability == True:
                 self.devicesHealthy = True
                     
 
@@ -257,7 +283,7 @@ class MQTT_Interface:
                 device.manualOverrideActive = False
         
         
-        self.updateBridgeHealth()
+        self.updateBridgeHealthNoDevice2()
         
         if not systemHealth.systemHealthy:
             self.switch_off(self.devices[0].friendly_name)

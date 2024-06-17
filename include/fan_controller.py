@@ -2,6 +2,7 @@ class Fan:
     def __init__(self, output_device, fan_speed):
         self.fan_speed = fan_speed
         self.device = output_device
+        self.set_fan_speed(self.fan_speed)
         
     def set_fan_speed(self, speed):
         self.fan_speed = speed
