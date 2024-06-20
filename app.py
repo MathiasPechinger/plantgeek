@@ -296,7 +296,25 @@ def switchPowerSocket():
     
     return jsonify({'status': 'toggleoutput of {}'.format(ieeeAddr)})
 
+@app.route('/getZigbeeDevices', methods=['POST'])
+def getZigbeeDevices():
+    devices = mqtt_interface.getDevices()
+    device_list = [str(device) for device in devices]
+    return jsonify(device_list)
+    # return jsonify(mqtt_interface.getDevices())
 
+@app.route('/removeZigbeeDevice', methods=['POST'])
+def removeZigbeeDevice():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    ieeeAddr = request.get_json().get('ieeeAddr')
+    if state is None or ieeeAddr is None:
+        return jsonify({'error': 'Missing required parameters'}), 400
+    
+    mqtt_interface.removeDevice(ieeeAddr)
+    
+    return jsonify({'status': 'toggleoutput of {}'.format(ieeeAddr)})
 
 
 @app.route('/activatePumpOnce', methods=['POST'])

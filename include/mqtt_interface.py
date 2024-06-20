@@ -83,7 +83,7 @@ class MQTT_Interface:
 
     def on_message(self, client, userdata, msg):
         try:
-            # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+            print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
             # Availability messages
             if "availability" in msg.topic:
                 device_name = msg.topic.split('/')[1]
@@ -135,6 +135,16 @@ class MQTT_Interface:
             self.zigbeeDevices = response.json()
         except requests.exceptions.RequestException as error:
             print(f'Error fetching Zigbee devices: {error}')
+            
+    def fetchZigbeeDevicesFromBridge(self):
+        print("---------------> Fetching devices from bridge")
+        TOPIC = f"zigbee2mqtt/bridge/request/devices"
+        payload = '{" "}'
+        self.publish(TOPIC, payload)
+        SUB_TOPIC = f"zigbee2mqtt/bridge/response/devices"
+        SUB_TOPIC = "#" # good for debugging, check all messages
+        self.client.subscribe(SUB_TOPIC)
+        
 
     # This function is used to update the list of devices in the database
     # todo this is not modular, it should be done in a better way
@@ -175,6 +185,8 @@ class MQTT_Interface:
         # SUB_TOPIC = "#" # good for debugging, check all messages
         self.client.subscribe(SUB_TOPIC)
         
+    def getDevices (self):
+        return self.devices
         
     def getDeviceState(self, friendly_name):
         for device in self.devices:
@@ -215,7 +227,7 @@ class MQTT_Interface:
                 print("Device removed"+device.friendly_name)
                 
                 TOPIC = "zigbee2mqtt/bridge/request/device/remove"
-                payload = '{"id": "' + device.friendly_name + '"}'
+                payload = '{"id":"' + device.friendly_name + '", "force": true}'
                 print("Payload: ", payload)
                 self.publish(TOPIC, payload)
                 print(f"Device {device.friendly_name} removed")
@@ -236,7 +248,6 @@ class MQTT_Interface:
             elif self.devices[0].availability == True and self.devices[1].availability == True:
                 self.devicesHealthy = True
                     
-
     def mainloop(self, scheduler_mqtt, systemHealth):
         if self.availabiltyCheckCounter <= 0:
             # self.client.subscribe("zigbee2mqtt/+/availability")
@@ -244,7 +255,7 @@ class MQTT_Interface:
             self.client.subscribe(f"zigbee2mqtt/{self.devices[1].friendly_name}/availability")
             self.client.subscribe(f"zigbee2mqtt/{self.devices[2].friendly_name}/availability")
             # self.client.subscribe("zigbee2mqtt/bridge/devices") # get device information
-
+            self.fetchZigbeeDevicesFromBridge()
             self.availabiltyCheckCounter = 2
         else:
             self.availabiltyCheckCounter -= 1

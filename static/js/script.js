@@ -319,6 +319,7 @@ function fetchZigbeeState() {
 }
 
 // Function to fetch Zigbee device data from the JSON file
+// Todo get this from the backend to get rid of the webserver!
 function fetchZigbeeDevices() {
     fetch('http://192.168.2.167:5010/zigbee/devices')
     .then(response => response.json())
@@ -329,10 +330,29 @@ function fetchZigbeeDevices() {
     .catch(error => console.error('Error fetching Zigbee devices:', error));
 }
 
+function getZigbeeDevices() {
+    $.ajax({
+        url: '/getZigbeeDevices',
+        type: 'POST',
+        contentType: 'application/json',
+        success: function(response) {
+            console.log("Response: " + JSON.stringify(response));
+            // createDatabaseList(response, zigbeeDeviceState);
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
 // Function to create dynamic list items for JSON data
 function createDatabaseList(data, stateData) {
     const listContainer = document.getElementById('dynamic-list');
     listContainer.innerHTML = ''; // Clear any existing items
+
+    getZigbeeDevices();
 
     const deviceMap = {
         0: 'unused',
@@ -372,6 +392,17 @@ function createDatabaseList(data, stateData) {
                 switchPowerSocket(false,device.ieeeAddr)
             });
             listItem.appendChild(buttonOff);
+
+            const buttonRemove = document.createElement('button');
+            buttonRemove.className = 'btn btn-warning';
+            buttonRemove.textContent = 'remove';
+            buttonRemove.addEventListener('click', () => {
+                const confirmRemove = confirm('Are you sure you want to remove this device?');
+                if (confirmRemove) {
+                    // Perform the remove device action here
+                }
+            });
+            listItem.appendChild(buttonRemove);
             
             listContainer.appendChild(listItem);
   
@@ -387,6 +418,23 @@ function setPowerSocketOverrideToggle(rate, ieeeAddr) {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({rate: rate, ieeeAddr: ieeeAddr}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
+function removeZigbeeDevice(ieeeAddr) {
+    $.ajax({
+        url: '/removeZigbeeDevice',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ieeeAddr: ieeeAddr}),
         success: function(response) {
             // console.log("Response: " + JSON.stringify(response));
         },
