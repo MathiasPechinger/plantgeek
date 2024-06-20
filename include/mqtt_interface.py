@@ -83,7 +83,45 @@ class MQTT_Interface:
 
     def on_message(self, client, userdata, msg):
         try:
-            print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+            # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+            
+            
+            if msg.topic == "zigbee2mqtt/bridge/devices":
+                print("Received devices list from bridge")
+                payload = msg.payload.decode()
+                devices = json.loads(payload)
+                
+                # Exclude coordinator from the list
+                filtered_devices = [device for device in devices if device['type'] != 'Coordinator']
+
+                # Get the number of devices excluding the coordinator
+                device_count = len(filtered_devices)
+                print(f"Number of devices (excluding coordinator): {device_count}")
+
+                iter = 0
+
+                # Process the list of filtered devices
+                for device in filtered_devices:
+                    if iter >= device_count:
+                        break
+                    else:
+                        print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
+                        self.devices[iter].friendly_name = device['ieee_address']
+                        iter += 1
+                    
+                    
+
+                
+                
+                # iter = 0
+                # for device in devices:
+                #     print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
+                #     self.devices[iter].friendly_name = device['ieee_address']
+                #     if iter >= 3:
+                #         break # implment longer list (todo)
+                #     iter += 1
+
+            
             # Availability messages
             if "availability" in msg.topic:
                 device_name = msg.topic.split('/')[1]
@@ -119,63 +157,16 @@ class MQTT_Interface:
                         break
         except Exception as e:
             print(f"Error in on_message: {e}, Topic: {msg.topic}, Payload: {msg.payload}")
-
-    def fetch_zigbee_state(self):
-        try:
-            response = requests.get('http://localhost:5010/zigbee/state')
-            response.raise_for_status()
-            self.zigbeeState = response.json()
-        except requests.exceptions.RequestException as error:
-            print(f'Error fetching Zigbee state: {error}')
-
-    def fetch_zigbee_devices(self):
-        try:
-            response = requests.get('http://localhost:5010/zigbee/devices')
-            response.raise_for_status()
-            self.zigbeeDevices = response.json()
-        except requests.exceptions.RequestException as error:
-            print(f'Error fetching Zigbee devices: {error}')
             
     def fetchZigbeeDevicesFromBridge(self):
         print("---------------> Fetching devices from bridge")
         TOPIC = f"zigbee2mqtt/bridge/request/devices"
         payload = '{" "}'
         self.publish(TOPIC, payload)
-        SUB_TOPIC = f"zigbee2mqtt/bridge/response/devices"
-        SUB_TOPIC = "#" # good for debugging, check all messages
+        SUB_TOPIC = f"zigbee2mqtt/bridge/devices"
+        # SUB_TOPIC = "#" # good for debugging, check all messages
+        # code for extraction here
         self.client.subscribe(SUB_TOPIC)
-        
-
-    # This function is used to update the list of devices in the database
-    # todo this is not modular, it should be done in a better way
-    def update_database_list(self):
-        # print("Updating database list")
-        try:
-            matching_devices = []
-            for device in self.zigbeeDevices:
-                ieee_address = device.get("ieeeAddr")
-                for state_addr in self.zigbeeState:
-                    if state_addr == ieee_address:
-                        matching_devices.append(device)
-                        break
-
-
-            states = {device_id: info['state'] for device_id, info in self.zigbeeState.items()}
-            print("States: ", states)
-
-
-            if len(matching_devices) == 1:
-                self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-            elif len(matching_devices) == 2:
-                self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-                self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
-            elif len(matching_devices) == 3:
-                self.devices[0].friendly_name = matching_devices[0].get("ieeeAddr")
-                self.devices[1].friendly_name = matching_devices[1].get("ieeeAddr")
-                self.devices[2].friendly_name = matching_devices[2].get("ieeeAddr")
-
-        except Exception as e:
-            print(f"Error in update_database_list: {e}")
             
     def requestDeviceStateUpdate(self, friendly_name):
         TOPIC = f"zigbee2mqtt/{friendly_name}/get"
@@ -276,13 +267,8 @@ class MQTT_Interface:
         # for device in self.devices:
             # print(f"{device.friendly_name} - Last Seen: {device.internalLastSeen}")
         
-        
-
-        self.fetch_zigbee_state()
-        self.fetch_zigbee_devices()
-        
         if not self.initDone:
-            self.update_database_list()
+            self.fetchZigbeeDevicesFromBridge()
             self.initDone = True
 
         # Check if manual override is active
@@ -301,7 +287,7 @@ class MQTT_Interface:
             self.switch_off(self.devices[1].friendly_name)
             self.switch_off(self.devices[2].friendly_name)
         
-        mqttInterfaceDebugging = False
+        mqttInterfaceDebugging = True
         if (mqttInterfaceDebugging):
             print("--------------------------------------------------")
             print("Devices healthy: ", self.devicesHealthy)
