@@ -214,14 +214,9 @@ class MQTT_Interface:
                 device.internalLastSeen = None
                 device.manualOverrideTimer = 0
                 device.manualOverrideActive = False
-                
-                print("Device removed"+device.friendly_name)
-                
                 TOPIC = "zigbee2mqtt/bridge/request/device/remove"
-                payload = '{"id":"' + device.friendly_name + '", "force": true}'
-                print("Payload: ", payload)
+                payload = '{"id":"' + friendly_name + '", "force": true}'
                 self.publish(TOPIC, payload)
-                print(f"Device {device.friendly_name} removed")
                 return True
         return False
     

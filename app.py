@@ -309,7 +309,7 @@ def removeZigbeeDevice():
         return jsonify({'error': 'Missing JSON in request'}), 400
 
     ieeeAddr = request.get_json().get('ieeeAddr')
-    if state is None or ieeeAddr is None:
+    if ieeeAddr is None:
         return jsonify({'error': 'Missing required parameters'}), 400
     
     mqtt_interface.removeDevice(ieeeAddr)

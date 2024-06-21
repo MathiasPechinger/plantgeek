@@ -399,7 +399,7 @@ function createDatabaseList(data, stateData) {
             buttonRemove.addEventListener('click', () => {
                 const confirmRemove = confirm('Are you sure you want to remove this device?');
                 if (confirmRemove) {
-                    // Perform the remove device action here
+                    removeZigbeeDevice(device.ieeeAddr);
                 }
             });
             listItem.appendChild(buttonRemove);
