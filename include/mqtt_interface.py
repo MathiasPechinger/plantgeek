@@ -87,7 +87,7 @@ class MQTT_Interface:
             
             
             if msg.topic == "zigbee2mqtt/bridge/devices":
-                print("Received devices list from bridge")
+                # print("Received devices list from bridge")
                 payload = msg.payload.decode()
                 devices = json.loads(payload)
                 
@@ -96,7 +96,7 @@ class MQTT_Interface:
 
                 # Get the number of devices excluding the coordinator
                 device_count = len(filtered_devices)
-                print(f"Number of devices (excluding coordinator): {device_count}")
+                # print(f"Number of devices (excluding coordinator): {device_count}")
 
                 iter = 0
 
@@ -105,7 +105,7 @@ class MQTT_Interface:
                     if iter >= device_count:
                         break
                     else:
-                        print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
+                        # print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
                         self.devices[iter].friendly_name = device['ieee_address']
                         iter += 1
                     
@@ -159,7 +159,6 @@ class MQTT_Interface:
             print(f"Error in on_message: {e}, Topic: {msg.topic}, Payload: {msg.payload}")
             
     def fetchZigbeeDevicesFromBridge(self):
-        print("---------------> Fetching devices from bridge")
         TOPIC = f"zigbee2mqtt/bridge/request/devices"
         payload = '{" "}'
         self.publish(TOPIC, payload)
@@ -282,7 +281,7 @@ class MQTT_Interface:
             self.switch_off(self.devices[1].friendly_name)
             self.switch_off(self.devices[2].friendly_name)
         
-        mqttInterfaceDebugging = True
+        mqttInterfaceDebugging = False
         if (mqttInterfaceDebugging):
             print("--------------------------------------------------")
             print("Devices healthy: ", self.devicesHealthy)

@@ -304,40 +304,14 @@ function createStateList(data) {
 }
 
 
-let zigbeeDeviceState = null;
-
-// Function to fetch Zigbee state data from state.json
-function fetchZigbeeState() {
-    fetch('http://192.168.2.167:5010/zigbee/state')
-    .then(response => response.json())
-    .then(data => {
-        // console.log('Zigbee state data:', data);  // Log the response data
-        // createStateList(data);
-        zigbeeDeviceState = data;
-    })
-    .catch(error => console.error('Error fetching Zigbee state:', error));
-}
-
-// Function to fetch Zigbee device data from the JSON file
-// Todo get this from the backend to get rid of the webserver!
-function fetchZigbeeDevices() {
-    fetch('http://192.168.2.167:5010/zigbee/devices')
-    .then(response => response.json())
-    .then(data => {
-        // console.log('Zigbee devices data:', data);  // Log the response data
-        createDatabaseList(data, zigbeeDeviceState);
-    })
-    .catch(error => console.error('Error fetching Zigbee devices:', error));
-}
-
 function getZigbeeDevices() {
     $.ajax({
         url: '/getZigbeeDevices',
         type: 'POST',
         contentType: 'application/json',
         success: function(response) {
-            console.log("Response: " + JSON.stringify(response));
-            // createDatabaseList(response, zigbeeDeviceState);
+            // console.log("Response: " + JSON.stringify(response));
+            createDatabaseList(response);
         },
         error: function(xhr, status, error) {
             console.log("Error: " + error);
@@ -348,11 +322,10 @@ function getZigbeeDevices() {
 }
 
 // Function to create dynamic list items for JSON data
-function createDatabaseList(data, stateData) {
+function createDatabaseList(data) {
     const listContainer = document.getElementById('dynamic-list');
     listContainer.innerHTML = ''; // Clear any existing items
 
-    getZigbeeDevices();
 
     const deviceMap = {
         0: 'unused',
@@ -363,25 +336,29 @@ function createDatabaseList(data, stateData) {
 
     deviceCounter = 1;
 
-    data.forEach(device => {
-        const foundDeviceKey = Object.keys(stateData).find(key => key === device.ieeeAddr);
-        const foundDevice = stateData[foundDeviceKey];
-        
-        if (foundDevice) {
-            if (deviceCounter >= Object.keys(deviceMap).length) {
-                deviceCounter = 0;
-            }
-            const deviceType = deviceMap[deviceCounter];
+    for (const [deviceId, deviceData] of Object.entries(data)) {
+        deviceCounter++;
+        deviceMapID = deviceCounter - 1;
+
+        if (deviceCounter > 4) {
+            deviceMapID = 0; // unused extra devices
+        }
+
+        const deviceInfo = deviceData.split(', ');
+        const deviceId = deviceInfo[0].split(': ')[1];
+        const availability = deviceInfo[1].split(': ')[1];
+
+        if (availability === 'True') {
+            const deviceType = deviceMap[deviceMapID];
             const listItem = document.createElement('li');
             listItem.className = 'list-group-item';
-            // listItem.textContent = `ID: ${device.id}, Type: ${deviceType}, Last Seen: ${calculateLastSeen(device.lastSeen)} seconds ago, IEEE Address: ${device.ieeeAddr}`;
             listItem.textContent = `${deviceType} socket `;
             
             const buttonOn = document.createElement('button');
             buttonOn.className = 'btn btn-success';
             buttonOn.textContent = 'on';
             buttonOn.addEventListener('click', () => {
-                switchPowerSocket(true,device.ieeeAddr)
+                switchPowerSocket(true, deviceId);
             });
             listItem.appendChild(buttonOn);
 
@@ -389,7 +366,7 @@ function createDatabaseList(data, stateData) {
             buttonOff.className = 'btn btn-danger';
             buttonOff.textContent = 'off';
             buttonOff.addEventListener('click', () => {
-                switchPowerSocket(false,device.ieeeAddr)
+                switchPowerSocket(false, deviceId);
             });
             listItem.appendChild(buttonOff);
 
@@ -399,17 +376,15 @@ function createDatabaseList(data, stateData) {
             buttonRemove.addEventListener('click', () => {
                 const confirmRemove = confirm('Are you sure you want to remove this device?');
                 if (confirmRemove) {
-                    removeZigbeeDevice(device.ieeeAddr);
+                    removeZigbeeDevice(deviceId);
                 }
             });
             listItem.appendChild(buttonRemove);
             
             listContainer.appendChild(listItem);
-  
-            deviceCounter++;
+    
         }
-
-    });
+    }
 }
 
 function setPowerSocketOverrideToggle(rate, ieeeAddr) {
@@ -587,12 +562,8 @@ setInterval(fetchFridgeState, 3000);
 fetchCPUTemperature();
 setInterval(fetchCPUTemperature, 3000);
 
-fetchZigbeeDevices();
-setInterval(fetchZigbeeDevices, 3000);
-
-// Add this line to fetch the Zigbee state data periodically
-fetchZigbeeState()
-setInterval(fetchZigbeeState, 3000);
+getZigbeeDevices();
+setInterval(getZigbeeDevices, 3000);
 
 
 setInterval(updateTemperatureDisplay, 3000);

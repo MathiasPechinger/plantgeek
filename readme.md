@@ -65,4 +65,4 @@ sudo apt-get install git curl build-essential
 
 # known issues:
 
-* if the state.json is empty, it will crash
+* if the app.py crashes the system will freeze in its current state. We have to implemented a watchdog to account for that
