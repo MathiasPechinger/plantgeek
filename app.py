@@ -18,6 +18,7 @@ from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
 from include.health_monitoring import HealthMonitor
+from include.camera_recorder import CameraRecorder
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -357,9 +358,7 @@ def start_sensor_data_logger():
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
-# def start_mqtt_interface():
-#     global mqtt_interface
-#     mqtt_interface.loop_forever()
+
 
 
 
@@ -374,6 +373,7 @@ if __name__ == '__main__':
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
+    scheduler_camera = sched.scheduler(time.time, time.sleep)
         
     fan = Fan(PWMOutputDevice(13), 90) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
@@ -381,6 +381,7 @@ if __name__ == '__main__':
     light = Light(db_config)
     co2 = CO2()
     systemHealth = HealthMonitor()
+    camera = CameraRecorder()
     
     sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
     sensor_data_logger_thread.start()
@@ -391,6 +392,7 @@ if __name__ == '__main__':
     scheduler_databaseCheck.enter(0, 1, check_database)
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt, systemHealth,))
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
+    scheduler_camera.enter(0, 1, camera.record, (scheduler_camera,))
 
     light.turn_light_off(mqtt_interface)
     co2.close_co2_valve()
@@ -402,7 +404,8 @@ if __name__ == '__main__':
         threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
         threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
         threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_health,))
+        threading.Thread(target=run_scheduler, args=(scheduler_health,)),
+        threading.Thread(target=run_scheduler, args=(scheduler_camera,))
     ]
 
     for thread in threads:

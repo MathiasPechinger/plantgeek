@@ -550,6 +550,14 @@ function rebootSystem() {
     }
 }
 
+function refreshImage() {
+    const img = document.getElementById('webcamImage');
+    img.src = '/static/cameraImages/latest/lastFrame.jpg?timestamp=' + new Date().getTime();
+}
+
+refreshImage();
+setInterval(refreshImage, 1000);
+
 fetchData(); // Fetch data immediately
 setInterval(fetchData, 3000);
 
