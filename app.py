@@ -19,6 +19,7 @@ from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
 from include.health_monitoring import HealthMonitor
 from include.camera_recorder import CameraRecorder
+from include.plantgeek_backend_connector import PlantGeekBackendConnector
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -365,6 +366,8 @@ mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
 if __name__ == '__main__':
     
+    # Using PlanGeekBackend
+    plantGeekBackendInUse = True
         
         
     scheduler_light = sched.scheduler(time.time, time.sleep)
@@ -374,6 +377,21 @@ if __name__ == '__main__':
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
+    
+    if plantGeekBackendInUse:
+        plantGeekBackend = PlantGeekBackendConnector()
+        
+        scheduler_plantGeekBackend = sched.scheduler(time.time, time.sleep)
+        scheduler_plantGeekBackend.enter(2, 1, plantGeekBackend.sendDataToPlantGeekBackend, (scheduler_plantGeekBackend,sensorData,))
+        plantGeekBackend_thread = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend,))
+        plantGeekBackend_thread.start()
+        
+        scheduler_plantGeekBackend2 = sched.scheduler(time.time, time.sleep)
+        scheduler_plantGeekBackend2.enter(2, 1, plantGeekBackend.sendImageToPlantGeekBackend, (scheduler_plantGeekBackend2,))
+        plantGeekBackend_thread2 = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend2,))
+        plantGeekBackend_thread2.start()
+        
+        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend)
         
     fan = Fan(PWMOutputDevice(13), 90) 
     pump = Pump(PWMOutputDevice(12), 5, 50)
