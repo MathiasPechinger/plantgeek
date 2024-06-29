@@ -75,7 +75,7 @@ class SensorDataLogger:
             return None
 
     def insert_data_to_db(self, data):
-        query = "INSERT INTO measurements (temperature_c, temperature_f, humidity, eco2, tvoc) VALUES (%s, %s, %s, %s, %s)"
+        query = "INSERT INTO measurements (temperature_c, humidity, eco2) VALUES (%s, %s, %s)"
         self.cursor.execute(query, data)
 
     def initialize_sensors(self):
@@ -112,10 +112,8 @@ class SensorDataLogger:
                     
                     data = (
                         self.scd4x.temperature,
-                        self.scd4x.temperature * (9 / 5) + 32,
                         self.scd4x.relative_humidity,
                         self.scd4x.CO2,
-                        -1
                     )
                     data_available = True
             else:
