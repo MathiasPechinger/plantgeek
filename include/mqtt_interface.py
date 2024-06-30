@@ -203,6 +203,12 @@ class MQTT_Interface:
                 # print("Device: ", device.friendly_name, "Availability: ", device.availability)
         return None
     
+    def setDeviceAutoOffCountdown(self, friendly_name, countdown):
+        TOPIC = f"zigbee2mqtt/{friendly_name}/set"
+        payload = '{"countdown":' + countdown + '}'        
+        self.publish(TOPIC, payload)
+        return None
+    
     def removeDevice(self, friendly_name):
         print("trying_to_remove_device")
         for device in self.devices:
@@ -264,6 +270,12 @@ class MQTT_Interface:
         if not self.initDone:
             self.fetchZigbeeDevicesFromBridge()
             self.initDone = True
+        
+        # If this software stops working, the devices will be turned off internally, this is a safety feature!
+        if self.initDone:
+            self.setDeviceAutoOffCountdown(self.devices[0].friendly_name, "10")
+            self.setDeviceAutoOffCountdown(self.devices[1].friendly_name, "10")
+            self.setDeviceAutoOffCountdown(self.devices[2].friendly_name, "10")
 
         # Check if manual override is active
         for device in self.devices:
