@@ -345,7 +345,6 @@ class MQTT_Interface:
             return False
         else:
             if self.devices[1].manualOverrideActive:
-                # Light is in manual override mode
                 print("Fridge is in manual override mode")
                 pass
             else:
@@ -357,6 +356,22 @@ class MQTT_Interface:
 
     def getFridgeState(self):
         return self.devices[1].state
+    
+    def setCO2State(self, state):
+        if self.devices[2].friendly_name == "":
+            # No light socket found, intializing
+            print("No co2 socket found")
+            return False
+        else:
+            if self.devices[2].manualOverrideActive:
+                print("CO2 is in manual override mode")
+                pass
+            else:
+                TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
+                payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
+                self.client.publish(TOPIC, payload)
+                self.devices[2].state = state
+            return True
 
     def getLightState(self):
         return self.devices[0].state
@@ -368,7 +383,6 @@ class MQTT_Interface:
             return False
         else:
             if self.devices[0].manualOverrideActive:
-                # Light is in manual override mode
                 print("Light is in manual override mode")
                 pass
             else:

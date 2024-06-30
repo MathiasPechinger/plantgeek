@@ -377,6 +377,8 @@ if __name__ == '__main__':
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
+    scheduler_co2 = sched.scheduler(time.time, time.sleep)
+    
     
     if plantGeekBackendInUse:
         plantGeekBackend = PlantGeekBackendConnector()
@@ -411,9 +413,11 @@ if __name__ == '__main__':
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt, systemHealth,))
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
     scheduler_camera.enter(0, 1, camera.record, (scheduler_camera,))
+    scheduler_co2 = sched.scheduler(time.time, time.sleep)
+    scheduler_co2.enter(0, 1, co2.control_co2, (scheduler_co2,mqtt_interface,sensorData,))
 
     light.turn_light_off(mqtt_interface)
-    co2.close_co2_valve()
+    co2.close_co2_valve(mqtt_interface)
     fridge.switch_off(mqtt_interface)
 
     threads = [
@@ -423,7 +427,8 @@ if __name__ == '__main__':
         threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
         threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
         threading.Thread(target=run_scheduler, args=(scheduler_health,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_camera,))
+        threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
+        threading.Thread(target=run_scheduler, args=(scheduler_co2,))
     ]
 
     for thread in threads:
