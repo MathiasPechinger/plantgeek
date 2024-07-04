@@ -8,7 +8,7 @@ class Fridge:
         self.off_time = None
         self.db_config = db_config
         self.controlTemperature = 27.5
-        self.hysteresis = 1.5
+        self.hysteresis = 0.5
         
     def switch_on(self, mqtt_interface):
         minimum_off_time = 120 # todo set to 60

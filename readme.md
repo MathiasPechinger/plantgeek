@@ -64,5 +64,11 @@ sudo apt-get install git curl build-essential
 ```
 
 # known issues:
+* none
 
-* if the app.py crashes the system will freeze in its current state. We have to implemented a watchdog to account for that
+
+# todo list
+* temperature control value not adjustable
+* Enable/Disable Menu für Pump Control, Fan Control, etc.
+* Frontend Credential Manager to connect to plant geek not implemented
+* Sensor type configuration selection not implemented (w/wo CO2 control)

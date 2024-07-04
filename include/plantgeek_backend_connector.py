@@ -13,9 +13,10 @@ class PlantGeekBackendConnector:
         self.image_url = 'https://plantgeek.de:5000/api/image'
         
         self.credentials = {
-            'username': 'username',
-            'password': 'jr7cReDRWI7W1bCEEr6d3BvGQ3eCTl4r'
+            'username': 'mathiaspechinger_iut8g5oo',
+            'api_key': '2114aadec64001c77d394845971f63dc'
         }
+        
 
     def sendImageToPlantGeekBackend(self, sc):
         try:
@@ -44,7 +45,7 @@ class PlantGeekBackendConnector:
 
                 # Check the response status
                 if data_response.status_code == 200:
-                    print('Data sent successfully!')
+                    # print('Data sent successfully!')
                     pass
                 else:
                     print(f'Failed to send data. Status code: {data_response.status_code}')
@@ -99,7 +100,7 @@ class PlantGeekBackendConnector:
                 print(f'Failed to log in. Status code: {login_response.status_code}')
                 print('Response:', login_response.text)
                 
-            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
+            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
         except Exception as e:
-            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
+            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
             print(f"An error occurred: {str(e)}")
