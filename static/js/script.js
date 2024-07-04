@@ -223,7 +223,7 @@ function updateTimespan() {
 
 // Define the chart configurations
 var tempCtx = document.getElementById('temperatureChart').getContext('2d');
-var temperatureChart = new Chart(tempCtx, createChartConfig('Temperature (C)', 'rgb(255, 99, 132)'));
+var temperatureChart = new Chart(tempCtx, createChartConfig('Temperature (C)', 'rgb(255, 99, 132)', 'rgb(255, 205, 86)'));
 var humidCtx = document.getElementById('humidityChart').getContext('2d');
 var humidityChart = new Chart(humidCtx, createChartConfig('Humidity (%)', 'rgb(54, 162, 235)'));
 var eco2Ctx = document.getElementById('eco2Chart').getContext('2d');
@@ -231,7 +231,7 @@ var eco2Chart = new Chart(eco2Ctx, createChartConfig('eCO2 (ppm)', 'rgb(75, 192,
 var tvocCtx = document.getElementById('tvocChart').getContext('2d');
 var tvocChart = new Chart(tvocCtx, createChartConfig('TVOC (ppb)', 'rgb(153, 102, 255)'));
 
-function createChartConfig(label, borderColor) {
+function createChartConfig(label, borderColor, lightStateColor) {
     return {
         type: 'line',
         data: {
@@ -239,26 +239,57 @@ function createChartConfig(label, borderColor) {
             datasets: [{
                 label: label,
                 borderColor: borderColor,
-                data: []
+                data: [],
+                yAxisID: 'y'
+            },
+            {
+                label: 'Light State',
+                borderColor: lightStateColor,
+                backgroundColor: lightStateColor,
+                data: [],
+                yAxisID: 'y1',
+                fill: false,
+                stepped: true
             }]
         },
         options: {
             scales: {
-                x: {  // Updated configuration for Chart.js v3
+                x: {
                     type: 'linear',
                     title: {
                         display: true,
                         text: 'last 24 hours'
                     },
+                },
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: label
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Light State'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    min: 0,
+                    max: 1
                 }
             }
         }
     };
 }
 
-function updateChart(chart, data) {
-    // console.log("Updating chart with data:", data);
 
+
+function updateChart(chart, data) {
     if (data[0].length === 0) {
         console.log("Data array is empty, resetting chart data.");
         chart.data.labels = [];
@@ -266,7 +297,6 @@ function updateChart(chart, data) {
             dataset.data = [];
         });
     } else {
-        // Assuming you have a way to generate labels or you use a simple index for labels
         chart.data.labels = data[0].map((_, index) => index); // Update labels if necessary
         chart.data.datasets.forEach((dataset, index) => {
             dataset.data = data[index]; // Update data within the dataset
@@ -274,6 +304,7 @@ function updateChart(chart, data) {
     }
     chart.update(); // Redraw the chart
 }
+
 // Function to create dynamic list items for state.json data
 function createStateList(data) {
     const listContainer = document.getElementById('dynamic-list');
@@ -510,20 +541,20 @@ function fetchData() {
     $.ajax({
         url: '/data?timespan=' + timespan,
         success: function(data) {
-            // console.log("Received data for charts:", data);  // Debug print
             if (data && data.length > 0) {
                 var temps = data.map(d => d[0]);
                 var humids = data.map(d => d[1]);
                 var eco2s = data.map(d => d[2]);
                 var tvocs = data.map(d => d[3]);
+                var light_state = data.map(d => d[4]);
                 
-                updateChart(temperatureChart, [temps]);
+                updateChart(temperatureChart, [temps, light_state]);
                 updateChart(humidityChart, [humids]);
                 updateChart(eco2Chart, [eco2s]);
                 updateChart(tvocChart, [tvocs]);
             } else {
                 console.log("No data received, clearing charts");
-                updateChart(temperatureChart, [[]]);
+                updateChart(temperatureChart, [[], []]);
                 updateChart(humidityChart, [[]]);
                 updateChart(eco2Chart, [[]]);
                 updateChart(tvocChart, [[]]);
@@ -534,6 +565,7 @@ function fetchData() {
         }
     });
 }
+
 
 function rebootSystem() {
     if (confirm('Are you sure you want to reboot the system?')) {

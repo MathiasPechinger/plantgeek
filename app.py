@@ -159,12 +159,25 @@ def data():
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
+    # query = """
+    # SELECT temperature_c, humidity, eco2, tvoc
+    # FROM measurements
+    # WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    # AND MINUTE(timestamp) % 10 = 0;
+    # """
+    
+    # query = """
+    # SELECT temperature_c, humidity, eco2, tvoc, light_state, fridge_state, co2_state
+    # FROM measurements
+    # WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    # """
+    
     query = """
-    SELECT temperature_c, humidity, eco2, tvoc
+    SELECT temperature_c, humidity, eco2, tvoc, light_state, fridge_state, co2_state
     FROM measurements
-    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-    AND MINUTE(timestamp) % 10 = 0;
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
     """
+    
     cursor.execute(query)
     results = cursor.fetchall()
     cursor.close()
@@ -352,15 +365,15 @@ def run_scheduler(scheduler):
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
 sensorData = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
-
-def start_sensor_data_logger():
-    global sensorData
-    sensorData.run()
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
 
 
+def start_sensor_data_logger():
+    global sensorData
+    global mqtt_interface
+    sensorData.run(mqtt_interface)
 
 
 

@@ -11,7 +11,7 @@ class Fridge:
         self.hysteresis = 0.5
         
     def switch_on(self, mqtt_interface):
-        minimum_off_time = 120 # todo set to 60
+        minimum_off_time = 30 # todo set to 60
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
             if not mqtt_interface.getFridgeState(): 
                 print("Switching on fridge ....")

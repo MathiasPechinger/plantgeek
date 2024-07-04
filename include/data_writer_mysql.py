@@ -75,7 +75,7 @@ class SensorDataLogger:
             return None
 
     def insert_data_to_db(self, data):
-        query = "INSERT INTO measurements (temperature_c, humidity, eco2) VALUES (%s, %s, %s)"
+        query = "INSERT INTO measurements (temperature_c, humidity, eco2, light_state, fridge_state,co2_state) VALUES (%s, %s, %s, %s, %s, %s)"
         self.cursor.execute(query, data)
 
     def initialize_sensors(self):
@@ -90,10 +90,11 @@ class SensorDataLogger:
             logging.error("Invalid sensor configuration. Exiting...")
             raise ValueError("Invalid sensor configuration.")
 
-    def run(self):
+    def run(self, mqtt_interface):
         self.connect_to_mysql()
         self.initialize_sensors()
         data_available = False
+        
 
         while True:
             if not self.db.is_connected():
@@ -114,6 +115,9 @@ class SensorDataLogger:
                         self.scd4x.temperature,
                         self.scd4x.relative_humidity,
                         self.scd4x.CO2,
+                        mqtt_interface.getLightState(),
+                        mqtt_interface.getFridgeState(),
+                        mqtt_interface.getCO2State(),
                     )
                     data_available = True
             else:
@@ -127,6 +131,6 @@ class SensorDataLogger:
 
             time.sleep(5.0)
 
-if __name__ == "__main__":
-    logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
-    logger.run()
+# if __name__ == "__main__":
+#     logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
+#     logger.run()
