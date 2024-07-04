@@ -223,34 +223,47 @@ function updateTimespan() {
 
 // Define the chart configurations
 var tempCtx = document.getElementById('temperatureChart').getContext('2d');
-var temperatureChart = new Chart(tempCtx, createChartConfig('Temperature (C)', 'rgb(255, 99, 132)', 'rgb(255, 205, 86)'));
+var temperatureChart = new Chart(tempCtx, createChartConfig(
+    'Temperature (C)', 'rgb(255, 99, 132)', 
+    'Light State', 'rgb(255, 205, 86)', 
+    'Fridge State', 'rgb(54, 162, 235)'
+));
 var humidCtx = document.getElementById('humidityChart').getContext('2d');
 var humidityChart = new Chart(humidCtx, createChartConfig('Humidity (%)', 'rgb(54, 162, 235)'));
 var eco2Ctx = document.getElementById('eco2Chart').getContext('2d');
-var eco2Chart = new Chart(eco2Ctx, createChartConfig('eCO2 (ppm)', 'rgb(75, 192, 192)'));
-var tvocCtx = document.getElementById('tvocChart').getContext('2d');
-var tvocChart = new Chart(tvocCtx, createChartConfig('TVOC (ppb)', 'rgb(153, 102, 255)'));
+var eco2Chart = new Chart(eco2Ctx, createChartConfig('eCO2 (ppm)', 'rgb(75, 192, 192)', 'rgb(255, 159, 64)', 'CO2 State', 'rgb(75, 192, 192)'));
 
-function createChartConfig(label, borderColor, lightStateColor) {
+function createChartConfig(label, borderColor, lightStateLabel, lightStateColor, fridgeStateLabel, fridgeStateColor) {
     return {
         type: 'line',
         data: {
             labels: [],
-            datasets: [{
-                label: label,
-                borderColor: borderColor,
-                data: [],
-                yAxisID: 'y'
-            },
-            {
-                label: 'Light State',
-                borderColor: lightStateColor,
-                backgroundColor: lightStateColor,
-                data: [],
-                yAxisID: 'y1',
-                fill: false,
-                stepped: true
-            }]
+            datasets: [
+                {
+                    label: label,
+                    borderColor: borderColor,
+                    data: [],
+                    yAxisID: 'y'
+                },
+                {
+                    label: lightStateLabel,
+                    borderColor: lightStateColor,
+                    backgroundColor: lightStateColor,
+                    data: [],
+                    yAxisID: 'y1',
+                    fill: false,
+                    stepped: true
+                },
+                {
+                    label: fridgeStateLabel,
+                    borderColor: fridgeStateColor,
+                    backgroundColor: fridgeStateColor,
+                    data: [],
+                    yAxisID: 'y1',
+                    fill: false,
+                    stepped: true
+                }
+            ]
         },
         options: {
             scales: {
@@ -274,7 +287,7 @@ function createChartConfig(label, borderColor, lightStateColor) {
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Light State'
+                        text: 'State'
                     },
                     grid: {
                         drawOnChartArea: false
@@ -304,6 +317,8 @@ function updateChart(chart, data) {
     }
     chart.update(); // Redraw the chart
 }
+
+
 
 // Function to create dynamic list items for state.json data
 function createStateList(data) {
@@ -505,7 +520,6 @@ function fetchDataNow() {
             document.getElementById('actual-temperature').innerText = data[0][0].toFixed(2);
             document.getElementById('actual-humidity').innerText = data[0][1].toFixed(2);
             document.getElementById('actual-eco2').innerText = data[0][2].toFixed(2);
-            document.getElementById('actual-tvoc').innerText = data[0][3].toFixed(2);
         },
         error: function(xhr, status, error) {
             console.error("Failed to fetch latest data:", error);
@@ -545,19 +559,18 @@ function fetchData() {
                 var temps = data.map(d => d[0]);
                 var humids = data.map(d => d[1]);
                 var eco2s = data.map(d => d[2]);
-                var tvocs = data.map(d => d[3]);
-                var light_state = data.map(d => d[4]);
-                
-                updateChart(temperatureChart, [temps, light_state]);
+                var light_state = data.map(d => d[3]);
+                var fridge_state = data.map(d => d[4]);
+                var co2_state = data.map(d => d[5]);
+
+                updateChart(temperatureChart, [temps, light_state, fridge_state]);
                 updateChart(humidityChart, [humids]);
-                updateChart(eco2Chart, [eco2s]);
-                updateChart(tvocChart, [tvocs]);
+                updateChart(eco2Chart, [eco2s, co2_state]);
             } else {
                 console.log("No data received, clearing charts");
-                updateChart(temperatureChart, [[], []]);
+                updateChart(temperatureChart, [[], [], []]);
                 updateChart(humidityChart, [[]]);
-                updateChart(eco2Chart, [[]]);
-                updateChart(tvocChart, [[]]);
+                updateChart(eco2Chart, [[], []]);
             }
         },
         error: function(xhr, status, error) {
@@ -565,6 +578,7 @@ function fetchData() {
         }
     });
 }
+
 
 
 function rebootSystem() {

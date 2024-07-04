@@ -18,7 +18,7 @@ class CO2:
                 
         if sensorData.currentCO2 < 800:
             self.open_co2_valve(mqtt_interface)
-        elif sensorData.currentCO2 > 850:
+        elif sensorData.currentCO2 > 810:
             self.close_co2_valve(mqtt_interface)
         sc.enter(5, 1, self.control_co2, (sc,mqtt_interface,sensorData,))
            

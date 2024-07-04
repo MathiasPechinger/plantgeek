@@ -160,20 +160,20 @@ def data():
     cursor = conn.cursor()
 
     # query = """
-    # SELECT temperature_c, humidity, eco2, tvoc
+    # SELECT temperature_c, humidity, eco2
     # FROM measurements
     # WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
     # AND MINUTE(timestamp) % 10 = 0;
     # """
     
     # query = """
-    # SELECT temperature_c, humidity, eco2, tvoc, light_state, fridge_state, co2_state
+    # SELECT temperature_c, humidity, eco2, light_state, fridge_state, co2_state
     # FROM measurements
     # WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
     # """
     
     query = """
-    SELECT temperature_c, humidity, eco2, tvoc, light_state, fridge_state, co2_state
+    SELECT temperature_c, humidity, eco2, light_state, fridge_state, co2_state
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
     """
@@ -346,7 +346,7 @@ def data_now():
     cursor = conn.cursor()
 
     query = """
-    SELECT temperature_c, humidity, eco2, tvoc
+    SELECT temperature_c, humidity, eco2
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
     ORDER BY timestamp DESC

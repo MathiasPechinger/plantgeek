@@ -64,7 +64,7 @@ sudo apt-get install git curl build-essential
 ```
 
 # known issues:
-* none
+* there is no failsave for the fridge. if the socket looses its connection we have a problem. This was initallay sovled by the out shutwon after time but it seems like this is not stable for the china sockets ...
 
 
 # todo list
@@ -72,3 +72,4 @@ sudo apt-get install git curl build-essential
 * Enable/Disable Menu für Pump Control, Fan Control, etc.
 * Frontend Credential Manager to connect to plant geek not implemented
 * Sensor type configuration selection not implemented (w/wo CO2 control)
+* implement slider to show older data than one hour
