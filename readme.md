@@ -24,7 +24,9 @@ virtualenv venv
 source venv/bin/activate
 ```
 
+## Notes:
 
+### Notes for DHT22 on Rasperry PI5
 Get the latest release from adafruit and install it 
 ```
 cd Adafruit_Python_DHT-*
@@ -39,14 +41,14 @@ Install more packages:
 pip install Adafruit-Blinka
 pip install Adafruit_CircuitPython_CCS811
 ```
-# Install libgpiod and its Python bindings
+### Install libgpiod and its Python bindings
 ```
 sudo apt-get install -y libgpiod2 libgpiod-dev
 pip install gpiod
 ```
 
 
-# Debugging mysql database
+### Debugging mysql database
 
 phpMyAdmin installation
 ```
@@ -57,7 +59,7 @@ sudo apt install phpmyadmin -y
 ```
 
 
-# install zigbee2mqtt
+### manual installation of zigbee2mqtt
 
 ```
 sudo apt-get install git curl build-essential
@@ -72,4 +74,4 @@ sudo apt-get install git curl build-essential
 * Enable/Disable Menu für Pump Control, Fan Control, etc.
 * Frontend Credential Manager to connect to plant geek not implemented
 * Sensor type configuration selection not implemented (w/wo CO2 control)
-* implement slider to show older data than one hour
+

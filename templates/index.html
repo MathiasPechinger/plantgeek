@@ -96,8 +96,9 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">Fan Control</div>
+    <!-- NOT USED RIGHT NOW -->
+    <!-- <div class="card">
+        <div class="card-header">Pump Control</div>
         <div class="card-body">
             <h5>Pump Power</h5>
             <input type="range" id="pump-power" min="0" max="100" value="0" class="form-range" onchange="setPumpPower(this.value)">
@@ -105,7 +106,7 @@
             <input type="number" id="pump-time-input" min="0" max="5" value="0" class="form-control" style="width: auto; display: inline-block;" onchange="setPumpTime(this.value)">
             <button onclick="activatePumpOnce()" class="btn btn-info">Activate Pump Once</button>
         </div>
-    </div>
+    </div> -->
 
     <div class="card">
         <div class="card-header">Fridge State</div>
@@ -131,7 +132,8 @@
     <div class="card">
         <div class="card-header">CO2 Control Dashboard</div>
         <div class="card-body">
-            <button onclick="requestCO2(true)" class="btn btn-danger">Get CO2</button>
+            <!-- <button onclick="requestCO2(true)" class="btn btn-danger">Get CO2</button> -->
+             <p>CO2 Control is static and set up to be activated at 800ppm and shut down at 850ppm</p>
         </div>
     </div>
 
