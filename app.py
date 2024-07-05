@@ -175,8 +175,8 @@ def data():
     query = """
     SELECT temperature_c, humidity, eco2, light_state, fridge_state, co2_state
     FROM measurements
-    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    """
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL {} HOUR)
+    """.format(timeSpanDataFetching)
     
     cursor.execute(query)
     results = cursor.fetchall()
@@ -278,6 +278,27 @@ def pump_power():
         return jsonify({'error': 'Missing required parameter'}), 400
     pump.set_pump_power(power)
     return jsonify({'status': 'Pump time set to {}'.format(power)})
+
+
+
+# temporary use global variable for timeSpan value
+timeSpanDataFetching = 4
+
+@app.route('/dataFetchTimeSpan', methods=['POST'])
+def dataFetchTimeSpan():
+    if not request.is_json:
+        return jsonify({'error': 'Missing JSON in request'}), 400
+
+    timeSpan = request.get_json().get('timeSpan')
+    if timeSpan is None:
+        return jsonify({'error': 'Missing required parameter'}), 400
+    global timeSpanDataFetching # HERE HERE HERE
+    timeSpanDataFetching = timeSpan
+    print("timeSpanDataFetching: ", timeSpanDataFetching)
+    return jsonify({'status': 'Pump time set to {}'.format(timeSpan)})
+
+
+
 
 @app.route('/togglePowerSocketOverride', methods=['POST'])
 def togglePowerSocketOverride():

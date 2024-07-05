@@ -579,7 +579,22 @@ function fetchData() {
     });
 }
 
-
+function setTimeSpanDataBaseRetrieval(timeSpan) {
+    $.ajax({
+        url: '/dataFetchTimeSpan',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({timeSpan: timeSpan}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
 
 function rebootSystem() {
     if (confirm('Are you sure you want to reboot the system?')) {

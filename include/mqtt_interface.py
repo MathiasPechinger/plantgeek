@@ -395,11 +395,11 @@ class MQTT_Interface:
         if state:
             # payload = '{"state": "ON", "on_time": 10, "off_wait_time": 10}' #  on_time prevents sleeping error if system is not healthy
             payload = '{"state": "ON", "on_time":' + on_time + ', "off_wait_time":' + off_wait_time + '}' #  on_time prevents sleeping error if system is not healthy
-            print("CO2 valve opened")
+            # print("CO2 valve opened")
             print(TOPIC)
             print(payload)
         else:
-            print("CO2 valve closed")
+            # print("CO2 valve closed")
             payload = '{"state": "OFF"}'
         self.client.publish(TOPIC, payload)
 

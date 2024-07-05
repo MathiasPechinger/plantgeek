@@ -159,6 +159,10 @@
         <div class="card-body">
             CPU Temperature: <span id="cpu_temperature"></span><br>
             RP1 ADC Temperature: <span id="rp1_adc_temperature"></span><br>
+            <button onclick="setTimeSpanDataBaseRetrieval(24)" class="btn btn-primary">24h</button>
+            <button onclick="setTimeSpanDataBaseRetrieval(12)" class="btn btn-primary">12h</button>
+            <button onclick="setTimeSpanDataBaseRetrieval(4)" class="btn btn-primary">4h</button>
+            <button onclick="setTimeSpanDataBaseRetrieval(1)" class="btn btn-primary">1h</button>
             <h5>Temperature (C)</h5>
             <p>Current Temperature: <span id="actual-temperature"></span></p>
             <canvas id="temperatureChart" width="400" height="auto"></canvas><br>
