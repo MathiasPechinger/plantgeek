@@ -83,8 +83,16 @@ db_config = {
 # light = OutputDevice(17)
 # co2valve = OutputDevice(27)
 
-
-
+# Settings for frontend
+frontend_display_settings = {
+    "toggle_image_stream": False,
+    "toggle_fan_control": False,
+    "toggle_fridge_state": False,
+    "toggle_light_control": False,
+    "toggle_co2_control": False,
+    "toggle_zigbee_dashboard": False,
+    "toggle_environment_graph": False,
+}
 
 @app.route('/fridge_state')
 def fridge_state():
@@ -137,7 +145,20 @@ def zigbeePairing():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    global frontend_display_settings
+
+    return render_template('index.html', display_settings=frontend_display_settings)
+
+@app.route('/update_toggle', methods=['POST'])
+def update_toggle():
+    global frontend_display_settings
+
+    toggle_id = request.form.get('toggle_id')
+    toggle_value = request.form.get('toggle_value')
+    if toggle_id and toggle_value is not None:
+        frontend_display_settings[toggle_id] = bool(toggle_value)
+        return jsonify({'status': 'success', 'toggle_id': toggle_id, 'toggle_value': toggle_value})
+    return jsonify({'status': 'failure', 'message': 'Invalid data'})
 
 @app.route('/data/rpi-temperature')
 def cpu_temp():
