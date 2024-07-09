@@ -380,9 +380,21 @@ class MQTT_Interface:
                 self.switchLedvanceSocket_4058075729261(self.devices[2].friendly_name, state, "60", "10")
             return True
         
+    # Source: https://www.zigbee2mqtt.io/devices/4058075729261.html
+    # When setting the state to ON, it might be possible to specify an automatic shutoff after a certain amount of time. 
+    # To do this add an additional property on_time to the payload which is the time in seconds the state should remain on. 
+    # Additionnaly an off_wait_time property can be added to the payload to specify the cooldown time in seconds when the 
+    # switch will not answer to other on with timed off commands. Support depend on the switch firmware. Some devices might 
+    # require both on_time and off_wait_time to work Examples : 
+    # {"state" : "ON", "on_time": 300}, 
+    # {"state" : "ON", "on_time": 300, "off_wait_time": 120}   
+    
     def switchLedvanceSocket_4058075729261(self, friendly_name, state, on_time, off_wait_time):
         # TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
         # payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
+        
+        
+        
         TOPIC = f"zigbee2mqtt/{friendly_name}/set"
         if state:
             # payload = '{"state": "ON", "on_time": 10, "off_wait_time": 10}' #  on_time prevents sleeping error if system is not healthy

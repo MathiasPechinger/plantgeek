@@ -5,22 +5,23 @@ class Light:
     def __init__(self, db_config,):
         self.lightState = False
         self.db_config = db_config
-        self.light_on_time = datetime.time(8, 0)
+        self.light_on_time = datetime.time(5, 0)
         self.light_off_time = datetime.time(23, 0)
         
     def turn_light_on(self,mqtt_interface):
-        # only send mqtt message if light is off   
-        if not mqtt_interface.getLightState():
-            success = mqtt_interface.setLightState(True)
-            if success:
-                self.lightState = True
+        # The light must be set according to the auto off time in the mqtt interface
+        # This is a safety function, otherwise it will automatically shut down
+        # check_time_and_control_light runs at 1 Hz. The light will shutdown after 60 seconds
+        # based on the mqtt_interface auto off time
+        success = mqtt_interface.setLightState(True)
+        if success:
+            self.lightState = True
                 
     def turn_light_off(self,mqtt_interface):
         # only send mqtt message if light is on
-        if mqtt_interface.getLightState():
-            success = mqtt_interface.setLightState(False)
-            if success:
-                self.lightState = False
+        success = mqtt_interface.setLightState(False)
+        if success:
+            self.lightState = False
 
         
     def set_light_times(self, on_time_str, off_time_str):
