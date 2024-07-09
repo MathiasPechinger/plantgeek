@@ -271,11 +271,6 @@ class MQTT_Interface:
             self.fetchZigbeeDevicesFromBridge()
             self.initDone = True
         
-        # If this software stops working, the devices will be turned off internally, this is a safety feature!
-        if self.initDone:
-            self.setDeviceAutoOffCountdownSocketA1Z(self.devices[0].friendly_name, "10")
-            # self.setDeviceAutoOffCountdownSocketA1Z(self.devices[1].friendly_name, "10") # i think this is doing something stupid or we have timing issues
-            # self.setDeviceAutoOffCountdown(self.devices[2].friendly_name, "10")
 
         # Check if manual override is active
         for device in self.devices:
@@ -360,10 +355,7 @@ class MQTT_Interface:
                 print("Fridge is in manual override mode")
                 pass
             else:
-                TOPIC = f"zigbee2mqtt/{self.devices[1].friendly_name}/set"
-                payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
-                self.client.publish(TOPIC, payload)
-                self.devices[1].state = state
+                self.switchLedvanceSocket_4058075729261(self.devices[1].friendly_name, state, "60", "10")
             return True
 
     def getFridgeState(self):
@@ -396,12 +388,23 @@ class MQTT_Interface:
             # payload = '{"state": "ON", "on_time": 10, "off_wait_time": 10}' #  on_time prevents sleeping error if system is not healthy
             payload = '{"state": "ON", "on_time":' + on_time + ', "off_wait_time":' + off_wait_time + '}' #  on_time prevents sleeping error if system is not healthy
             # print("CO2 valve opened")
-            print(TOPIC)
-            print(payload)
         else:
             # print("CO2 valve closed")
             payload = '{"state": "OFF"}'
         self.client.publish(TOPIC, payload)
+        
+    def switchNousSocket_A1Z(self, friendly_name, state, off_wait_time):
+        # TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
+        # payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
+        TOPIC = f"zigbee2mqtt/{friendly_name}/set"
+        if state:
+            payload = '{"state": "ON"}' 
+        else:
+            payload = '{"state": "OFF"}'
+        self.client.publish(TOPIC, payload)
+        
+        # Automatic shutdown if no message is received after 10 seconds // todo reimplementation if this is ever used again
+        # self.setDeviceAutoOffCountdownSocketA1Z(friendly_name, off_wait_time)
 
     def getLightState(self):
         return self.devices[0].state
@@ -416,10 +419,7 @@ class MQTT_Interface:
                 print("Light is in manual override mode")
                 pass
             else:
-                TOPIC = f"zigbee2mqtt/{self.devices[0].friendly_name}/set"
-                payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
-                self.client.publish(TOPIC, payload)
-                self.devices[0].state = state
+                self.switchLedvanceSocket_4058075729261(self.devices[0].friendly_name, state, "60", "10")
             return True
 
     # def get_devices(self):
