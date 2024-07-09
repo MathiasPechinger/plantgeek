@@ -13,11 +13,9 @@ class Fridge:
     def switch_on(self, mqtt_interface):
         minimum_off_time = 30 # todo set to 60
         if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
-            if not mqtt_interface.getFridgeState(): 
-                print("Switching on fridge ....")
-                success = mqtt_interface.setFridgeState(True)        
-                if success:
-                    self.is_on = True
+            success = mqtt_interface.setFridgeState(True)        
+            if success:
+                self.is_on = True
             
         else:
             print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
@@ -28,10 +26,9 @@ class Fridge:
         
         self.off_time = datetime.datetime.now()
         
-        if mqtt_interface.getFridgeState():
-            success = mqtt_interface.setFridgeState(False)        
-            if success:
-                self.is_on = False
+        success = mqtt_interface.setFridgeState(False)        
+        if success:
+            self.is_on = False
         
     def control_fridge(self, sc, mqtt_interface):
         temp = self.get_current_temp()
