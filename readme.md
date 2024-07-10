@@ -26,6 +26,18 @@ source venv/bin/activate
 
 ## Notes:
 
+### PiCam Support
+To use PiCam replace line 21 in app.py:
+
+'''
+from include.camera_recorder import CameraRecorder
+'''
+
+with
+'''
+from include.picamera_recorder import CameraRecorder
+'''
+
 ### Notes for DHT22 on Rasperry PI5
 Get the latest release from adafruit and install it 
 ```

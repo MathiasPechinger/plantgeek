@@ -141,8 +141,6 @@ def zigbeePairing():
     
     return jsonify(response)
 
-
-
 @app.route('/')
 def index():
     global frontend_display_settings
