@@ -18,9 +18,14 @@ from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
 from include.health_monitoring import HealthMonitor
+# manually setup camera for usb or pi camera by using the correct recorder (todo automatic or ui choice)
 # from include.camera_recorder import CameraRecorder
 from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
+
+import faulthandler
+
+faulthandler.enable()
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -405,7 +410,7 @@ def run_scheduler(scheduler):
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
-sensorData = SensorDataLogger(use_dht22=False, use_scd41=False, use_ccs811=False)
+sensorData = SensorDataLogger(use_dht22=True, use_scd41=False, use_ccs811=False)
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
@@ -421,7 +426,10 @@ def start_sensor_data_logger():
 if __name__ == '__main__':
     
     # Using PlanGeekBackend
-    plantGeekBackendInUse = True
+    plantGeekBackendInUse = False
+    
+    # Using CO2 control
+    activateCO2control = False
         
         
     scheduler_light = sched.scheduler(time.time, time.sleep)
@@ -431,7 +439,8 @@ if __name__ == '__main__':
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
-    scheduler_co2 = sched.scheduler(time.time, time.sleep)
+    if activateCO2control:
+        scheduler_co2 = sched.scheduler(time.time, time.sleep)
     
     
     if plantGeekBackendInUse:
@@ -453,7 +462,8 @@ if __name__ == '__main__':
     pump = Pump(PWMOutputDevice(12), 5, 50)
     fridge = Fridge(db_config) 
     light = Light(db_config)
-    co2 = CO2()
+    if activateCO2control:
+        co2 = CO2()
     systemHealth = HealthMonitor()
     camera = CameraRecorder()
     
@@ -467,23 +477,38 @@ if __name__ == '__main__':
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt, systemHealth,))
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
     scheduler_camera.enter(0, 1, camera.record, (scheduler_camera,))
-    scheduler_co2 = sched.scheduler(time.time, time.sleep)
-    scheduler_co2.enter(0, 1, co2.control_co2, (scheduler_co2,mqtt_interface,sensorData,))
+    if activateCO2control:
+        scheduler_co2 = sched.scheduler(time.time, time.sleep)
+        scheduler_co2.enter(0, 1, co2.control_co2, (scheduler_co2,mqtt_interface,sensorData,))
 
     light.turn_light_off(mqtt_interface)
-    co2.close_co2_valve(mqtt_interface)
+    if activateCO2control:
+        co2.close_co2_valve(mqtt_interface)
     fridge.switch_off(mqtt_interface)
 
-    threads = [
-        threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_light,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_health,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_co2,))
-    ]
+
+    
+    if activateCO2control:
+        threads = [
+            threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_light,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_health,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_co2,))
+        ]
+    else:
+        threads = [
+            threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_light,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_health,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_camera,))
+        ]
 
     for thread in threads:
         thread.start()

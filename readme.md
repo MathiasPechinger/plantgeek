@@ -91,6 +91,16 @@ sudo apt install phpmyadmin -y
 
 ```
 
+```
+sudo nano /etc/apache2/apache2.conf
+```
+Then add the following line to the end of the file.
+```
+Include /etc/phpmyadmin/apache.conf
+```
+Then restart apache
+
+sudo systemctl restart apache2
 
 ### manual installation of zigbee2mqtt
 

@@ -11,7 +11,6 @@ class CameraRecorder:
         self.counter = 0
 
     def record(self, scheduler_camera):
-        print("recording")
         self.camera.capture_file("static/cameraImages/latest/lastFrame.jpg")
         
         # Save an image to cameraimages/storage every hour
