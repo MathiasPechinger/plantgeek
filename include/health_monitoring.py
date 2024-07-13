@@ -5,7 +5,7 @@ class HealthMonitor:
         self.systemHealthy = False
         self.initDone = False
         self.previousTemperature = None
-        self.temperatureFrozenTimeout = 60
+        self.temperatureFrozenTimeout = 300 #5 minutes
         self.temperatureFrozenCounter = 0
         
     def check_status(self, sc, mqtt_interface, sensorData):
