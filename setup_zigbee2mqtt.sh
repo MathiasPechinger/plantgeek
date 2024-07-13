@@ -9,8 +9,8 @@ SERVICE_DIR="$(pwd)"
 # Step 1: Prepare Your Raspberry Pi
 # -------------------------------------------------------------
 echo "Updating and upgrading your Raspberry Pi..."
-# sudo apt-get update
-# sudo apt-get upgrade -y
+sudo apt-get update
+sudo apt-get upgrade -y
 
 # -------------------------------------------------------------
 # Step 2: Install necessary dependencies
@@ -39,9 +39,9 @@ echo "Cloning Zigbee2MQTT repository..."
 git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git .
 
 echo "Installing Zigbee2MQTT dependencies..."
-# npm ci
+npm ci
 
-# npm run build
+npm run build
 
 # -------------------------------------------------------------
 # Step 5: Edit the configuration file
