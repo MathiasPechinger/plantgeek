@@ -18,7 +18,8 @@ from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
 from include.health_monitoring import HealthMonitor
-from include.camera_recorder import CameraRecorder
+# from include.camera_recorder import CameraRecorder
+from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
 
 # Custom logging filter to exclude unwanted log messages
@@ -44,7 +45,7 @@ app = Flask(__name__)
 sensorsAlive = False
 databaseAlive = False
 
-# Apply the custom filter to the Flask app logger
+# Apply the custom filter to the Flask app logger 
 for handler in logging.getLogger('werkzeug').handlers:
     handler.addFilter(ExcludeLogsFilter())
 
@@ -404,7 +405,7 @@ def run_scheduler(scheduler):
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
-sensorData = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
+sensorData = SensorDataLogger(use_dht22=False, use_scd41=False, use_ccs811=False)
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 

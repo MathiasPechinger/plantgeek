@@ -7,7 +7,28 @@ Growing in total darkness. Or not?
 
 this is a work in progress
 
+
+
+
 ## Setup guide:
+
+note for pi zero 2 w.
+increase the swap
+```
+sudo nano /etc/dphys-swapfile
+```
+
+CONF_SWAPSIZE=1024
+
+
+
+
+enable i2c using 
+
+```
+sudo raspi-config
+```
+
 
 ```
 chmod +x setup.sh
