@@ -1,24 +1,17 @@
 #!/bin/bash
 
 # Update package list
-sudo apt update
+sudo apt-get update
+sudo apt-get upgrade -y
 
-sudo apt install python3-pip
-sudo apt install python3-venv python3-full -y
-
-# for picamera2 -> not sure if needed
-# sudo apt-get install -y cmake libboost-python-dev libboost-system-dev libjpeg-dev libtiff-dev # not sure if needed
-# sudo apt-get install -y libcamera-apps libcamera-dev
-# sudo apt install -y python3-picamera2
-# sudo apt-get install libcap-dev
+sudo apt-get install python3-virtualenv -y
 
 
 python3 -m venv --system-site-packages venv # --system-site-packages must be added because there is a bug with venv and picamera2
 source venv/bin/activate
 pip install -r requirements.txt
 
-
-
+pip install --upgrade numpy simplejpeg # fixes an issue with picam
 
 # ----------------- Install Nginx -----------------
 # # Define variables
