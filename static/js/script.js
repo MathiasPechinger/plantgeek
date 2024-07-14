@@ -95,6 +95,24 @@ function sendToggleStatus(toggleId, toggleValue) {
     });
 }
 
+function saveApiKey() {
+    const api_key = document.getElementById('api-key-input').value;
+    $.ajax({
+        url: '/save_api_key',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({api_key: api_key}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
+
 function setPumpPower(power) {
     $.ajax({
         url: '/setPumpPower',

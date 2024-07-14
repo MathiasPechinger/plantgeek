@@ -163,6 +163,31 @@
         </div>
     </div>
 
+    <div class="card">
+        <div class="card-header">
+            API Key
+            <label class="switch">
+                <input type="checkbox" id="toggle_api_key" onchange="sendToggleStatus('toggle_api_key', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_api_key else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_api_key" style="display: {{'block' if display_settings.toggle_toggle_api_key else 'none'}};">
+            <div class="card-body">
+                <h5>Enter your API Key</h5>
+                <input type="text" id="api-key-input" class="form-control" placeholder="Enter your API Key">
+                <button onclick="saveApiKey()" class="btn btn-primary">Save API Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function saveApiKey() {
+            var apiKey = document.getElementById("api-key-input").value;
+            // TODO: Implement code to save the API key
+            console.log("API Key saved: " + apiKey);
+        }
+    </script>
+
     <!-- NOT USED RIGHT NOW -->
     <!-- <div class="card">
         <div class="card-header">Pump Control</div>

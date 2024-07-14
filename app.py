@@ -9,6 +9,7 @@ import threading
 import psutil
 import logging
 import subprocess
+import json
 from functools import wraps
 from include.data_writer_mysql import SensorDataLogger
 from include.fridge_controller import Fridge
@@ -26,6 +27,10 @@ from include.plantgeek_backend_connector import PlantGeekBackendConnector
 import faulthandler
 
 faulthandler.enable()
+
+
+CONFIG_FILE = 'config/config.json'
+
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -67,6 +72,35 @@ def requires_auth(f):
             return abort(401)
         return f(*args, **kwargs)
     return decorated
+
+
+# Save the API key
+@app.route('/save_api_key', methods=['POST'])
+def save_api_key():
+    data = request.get_json()
+    api_key = data.get('api_key')
+    
+    if api_key:
+        with open(CONFIG_FILE, 'w') as config_file:
+            json.dump({'api_key': api_key}, config_file)
+            print(api_key)
+        return jsonify({"message": "API Key saved successfully!"}), 200
+    else:
+        return jsonify({"error": "No API Key provided"}), 400
+    
+    
+
+
+# Retrieve the API key
+@app.route('/get_api_key', methods=['GET'])
+def get_api_key():
+    try:
+        with open(CONFIG_FILE, 'r') as config_file:
+            config = json.load(config_file)
+            return jsonify({"api_key": config.get('api_key')}), 200
+    except FileNotFoundError:
+        return jsonify({"error": "API Key not found"}), 404
+
 
 @app.route('/reboot', methods=['POST'])
 @requires_auth
