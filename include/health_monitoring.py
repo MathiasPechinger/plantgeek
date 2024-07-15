@@ -3,10 +3,13 @@ import time
 class HealthMonitor:
     def __init__(self):
         self.systemHealthy = False
+        self.systemOverheated = False
         self.initDone = False
         self.previousTemperature = None
         self.temperatureFrozenTimeout = 60
         self.temperatureFrozenCounter = 0
+        self.overheatTemperature = 30.5
+        self.overheatHysteresis = 1.0
         
     def check_status(self, sc, mqtt_interface, sensorData):
         # Add your health check logic here
@@ -24,9 +27,22 @@ class HealthMonitor:
         
         self.systemHealthy = True
         
+        # check sensor data availability
+        if sensorData.currentTemperature == None:
+            self.systemHealthy = False
+            print("Temperature sensor data invalid.")
+            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+            return
+            
+        if sensorData.lastTimestamp == None:
+            self.systemHealthy = False
+            print("Sensor data no timestamp not updated.")
+            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+            return
+        
         if not mqtt_interface.devicesHealthy:
             self.systemHealthy = False
-            print("MQTT devices not healthy.")
+            print("Zigbee devices not healthy.")
             
         current_time = time.time()
         if sensorData.lastTimestamp == None:
@@ -46,8 +62,18 @@ class HealthMonitor:
             self.temperatureFrozenCounter = 0
             self.previousTemperature = sensorData.currentTemperature
             
+            
+        if sensorData.currentTemperature > self.overheatTemperature:
+            self.systemOverheated = True
+            
+        if self.systemOverheated:
+            print("WARNTING: System overheated! Reduce energy input (light, dehumidifier)!")
+            if sensorData.currentTemperature < self.overheatTemperature - self.overheatHysteresis:
+                self.systemOverheated = False
+            
         # print("System healthy: ", self.systemHealthy)
         sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+        return
 
     def get_status(self):
         return self.systemHealthy

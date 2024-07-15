@@ -287,11 +287,15 @@ class MQTT_Interface:
             self.switch_off(self.devices[0].friendly_name)
             self.switch_off(self.devices[1].friendly_name)
             self.switch_off(self.devices[2].friendly_name)
+            
+        if systemHealth.systemOverheated:
+            self.switch_off(self.devices[0].friendly_name)
         
         mqttInterfaceDebugging = False
         if (mqttInterfaceDebugging):
             print("--------------------------------------------------")
             print("Devices healthy: ", self.devicesHealthy)
+            print("System oveheated: ", systemHealth.systemOverheated)
             print("Devices availability: ", self.devices[0].availability, self.devices[1].availability, self.devices[2].availability)
             print("Devices state: ", self.devices[0].state, self.devices[1].state, self.devices[2].state)
             print("Devices manual override: ", self.devices[0].manualOverrideActive, self.devices[1].manualOverrideActive, self.devices[2].manualOverrideActive)
