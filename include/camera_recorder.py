@@ -8,7 +8,8 @@ class CameraRecorder:
 
     def record(self, scheduler_camera):
         ret, frame = self.camera.read()
-        frame = cv2.resize(frame, (320, 240)) # change to 320p stream
+        frame = cv2.resize(frame, (640, 480)) # change to 320p stream
+        # frame = cv2.resize(frame, (320, 240)) # change to 320p stream
         if not ret:
             print("Failed to capture frame")
             scheduler_camera.enter(1, 1, self.record, (scheduler_camera,))
