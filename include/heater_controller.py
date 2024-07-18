@@ -7,8 +7,8 @@ class Heater:
         self.is_on = False
         self.off_time = None
         self.db_config = db_config
-        self.controlTemperature = 27.5
-        self.hysteresis = 0.6
+        self.controlTemperature = 25.5
+        self.hysteresis = 0.3
         
     def switch_on(self, mqtt_interface):
         minimum_off_time = 30 # todo set to 60
@@ -43,11 +43,12 @@ class Heater:
             self.switch_off(mqtt_interface)
             sc.enter(5, 1, self.control_heater, (sc,mqtt_interface,))
             return
-        # print("--------------------")
-        # print(f"Current temperature: {temp} C")
+
+        
+        # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
         
         if mqtt_interface.getHeaterState() == False:
-            if temp > self.controlTemperature:
+            if temp < self.controlTemperature:
                 self.switch_on(mqtt_interface)
                 # print("switch on")
         
@@ -55,17 +56,16 @@ class Heater:
         # if the temperature is still above the threshold
         if mqtt_interface.getHeaterState() == True:
             # check if we are in the historysis range
-            # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
             
-            if temp > self.controlTemperature - self.hysteresis and temp < self.controlTemperature:
+            if temp < self.controlTemperature + self.hysteresis and temp > self.controlTemperature:
                 self.switch_on(mqtt_interface)
-                # print("Switching on, keep histeresis going.")
-            elif temp < self.controlTemperature - self.hysteresis:
+                print("Switching on, keep histeresis going.")
+            elif temp > self.controlTemperature + self.hysteresis:
                 self.switch_off(mqtt_interface)
-                # print("Switching off")
-            elif temp > self.controlTemperature:
+                print("Switching off")
+            elif temp < self.controlTemperature:
                 self.switch_on(mqtt_interface)
-                # print("Switching on")
+                print("Switching on")
             else:
                 print("Not supposed to happen!!!")
             

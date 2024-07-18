@@ -17,6 +17,7 @@ class Fridge:
         self.temperatureHysteresis = 0.6
         self.controlHumidity = 45
         self.humidityHysteresis = 2
+        self.controlTemperatureFallback = 28.0
         self.controlMode = ControlMode.HUMIDITY_CONTROL
         # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
@@ -43,7 +44,6 @@ class Fridge:
     def control_fridge(self, sc, mqtt_interface):
         
         if self.controlMode == ControlMode.TEMPERATURE_CONTROL:
-            print("Temperature control mode")
             temp = self.get_current_temp()
                     
             self.sensorChecks(temp, sc, mqtt_interface)           
@@ -52,13 +52,18 @@ class Fridge:
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
         
         elif self.controlMode == ControlMode.HUMIDITY_CONTROL:
-            print("Humidity control mode")
             humidity = self.get_current_humidity()
             temp = self.get_current_temp()
             
-            self.sensorChecks(temp, sc, mqtt_interface)         
-            self.humidity_control(sc, humidity, mqtt_interface)
+            self.sensorChecks(temp, sc, mqtt_interface)     
             
+            if temp > self.controlTemperatureFallback:
+                # if the temperature is above the fallback temperature we switch on the fridge   
+                self.switch_on(mqtt_interface)
+            else:
+                # regular operation
+                self.humidity_control(sc, humidity, mqtt_interface)
+                        
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
             
             
@@ -66,6 +71,7 @@ class Fridge:
             print("Invalid control mode")
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
             
+                
         
     def sensorChecks(self, temp, sc, mqtt_interface):
         if temp == -999:
@@ -89,7 +95,7 @@ class Fridge:
         # if the temperature is still above the threshold
         if mqtt_interface.getFridgeState() == True:
             # check if we are in the historysis range
-            print(f"humidity: {humidity}, control humidity: {self.controlHumidity}, hysteresis: {self.humidityHysteresis}")
+            # print(f"humidity: {humidity}, control humidity: {self.controlHumidity}, hysteresis: {self.humidityHysteresis}")
             
             if humidity > self.controlHumidity - self.humidityHysteresis and humidity < self.controlHumidity:
                 self.switch_on(mqtt_interface)
