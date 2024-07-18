@@ -324,10 +324,12 @@ function updateChart(chart, data) {
 function createStateList(data) {
     const listContainer = document.getElementById('dynamic-list');
     listContainer.innerHTML = ''; // Clear any existing items
+    // todo: this just be dynamic or not?
     const deviceMap = {
         light: 'Light',
         fridge: 'Fridge',
-        co2: 'CO2 Valve'
+        co2: 'CO2 Valve',
+        heater: 'Heater'
     };
     const usedDevices = Object.keys(deviceMap);
     for (const [deviceId, deviceData] of Object.entries(data)) {
@@ -377,7 +379,8 @@ function createDatabaseList(data) {
         0: 'unused',
         1: 'Light',
         2: 'Fridge',
-        3: 'CO2 Valve'
+        3: 'CO2 Valve',
+        4: 'Heater'
     };
 
     deviceCounter = 1;
@@ -386,7 +389,7 @@ function createDatabaseList(data) {
         deviceCounter++;
         deviceMapID = deviceCounter - 1;
 
-        if (deviceCounter > 4) {
+        if (deviceCounter > 5) {
             deviceMapID = 0; // unused extra devices
         }
 
