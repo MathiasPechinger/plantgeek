@@ -1,6 +1,12 @@
 import datetime
 import logging
 import mysql.connector
+from enum import Enum
+
+class ControlMode(Enum):
+    TEMPERATURE_CONTROL = 0
+    HUMIDITY_CONTROL = 1
+    
 
 class Fridge:
     def __init__(self, db_config):
@@ -8,7 +14,11 @@ class Fridge:
         self.off_time = None
         self.db_config = db_config
         self.controlTemperature = 27.5
-        self.hysteresis = 0.6
+        self.temperatureHysteresis = 0.6
+        self.controlHumidity = 45
+        self.humidityHysteresis = 2
+        self.controlMode = ControlMode.HUMIDITY_CONTROL
+        # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
     def switch_on(self, mqtt_interface):
         minimum_off_time = 30 # todo set to 60
@@ -31,8 +41,33 @@ class Fridge:
             self.is_on = False
         
     def control_fridge(self, sc, mqtt_interface):
-        temp = self.get_current_temp()
+        
+        if self.controlMode == ControlMode.TEMPERATURE_CONTROL:
+            print("Temperature control mode")
+            temp = self.get_current_temp()
+                    
+            self.sensorChecks(temp, sc, mqtt_interface)           
+            self.temperature_control(sc, temp, mqtt_interface)
                 
+            sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
+        
+        elif self.controlMode == ControlMode.HUMIDITY_CONTROL:
+            print("Humidity control mode")
+            humidity = self.get_current_humidity()
+            temp = self.get_current_temp()
+            
+            self.sensorChecks(temp, sc, mqtt_interface)         
+            self.humidity_control(sc, humidity, mqtt_interface)
+            
+            sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
+            
+            
+        else:
+            print("Invalid control mode")
+            sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
+            
+        
+    def sensorChecks(self, temp, sc, mqtt_interface):
         if temp == -999:
             self.switch_off(mqtt_interface)
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
@@ -43,9 +78,32 @@ class Fridge:
             self.switch_off(mqtt_interface)
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
             return
-        # print("--------------------")
-        # print(f"Current temperature: {temp} C")
         
+    def humidity_control(self, sc, humidity, mqtt_interface):
+        if mqtt_interface.getFridgeState() == False:
+            if humidity > self.controlHumidity:
+                self.switch_on(mqtt_interface)
+                # print("switch on")
+        
+        # because of the automatic shutdown by the socket timeout we have to keep sending the switch on signal
+        # if the temperature is still above the threshold
+        if mqtt_interface.getFridgeState() == True:
+            # check if we are in the historysis range
+            print(f"humidity: {humidity}, control humidity: {self.controlHumidity}, hysteresis: {self.humidityHysteresis}")
+            
+            if humidity > self.controlHumidity - self.humidityHysteresis and humidity < self.controlHumidity:
+                self.switch_on(mqtt_interface)
+                # print("Switching on, keep histeresis going.")
+            elif humidity < self.controlHumidity - self.humidityHysteresis:
+                self.switch_off(mqtt_interface)
+                # print("Switching off")
+            elif humidity > self.controlHumidity:
+                self.switch_on(mqtt_interface)
+                # print("Switching on")
+            else:
+                print("Not supposed to happen!!!")
+        
+    def temperature_control(self, sc, temp, mqtt_interface):
         if mqtt_interface.getFridgeState() == False:
             if temp > self.controlTemperature:
                 self.switch_on(mqtt_interface)
@@ -55,12 +113,12 @@ class Fridge:
         # if the temperature is still above the threshold
         if mqtt_interface.getFridgeState() == True:
             # check if we are in the historysis range
-            # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
+            # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.temperatureHysteresis}")
             
-            if temp > self.controlTemperature - self.hysteresis and temp < self.controlTemperature:
+            if temp > self.controlTemperature - self.temperatureHysteresis and temp < self.controlTemperature:
                 self.switch_on(mqtt_interface)
                 # print("Switching on, keep histeresis going.")
-            elif temp < self.controlTemperature - self.hysteresis:
+            elif temp < self.controlTemperature - self.temperatureHysteresis:
                 self.switch_off(mqtt_interface)
                 # print("Switching off")
             elif temp > self.controlTemperature:
@@ -68,8 +126,6 @@ class Fridge:
                 # print("Switching on")
             else:
                 print("Not supposed to happen!!!")
-            
-        sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
         
     def get_current_temp(self):
 
@@ -78,6 +134,24 @@ class Fridge:
 
         query = """
         SELECT temperature_c
+        FROM measurements
+        WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        ORDER BY timestamp DESC
+        LIMIT 1;
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return results[0][0]
+    
+    def get_current_humidity(self):
+
+        conn = mysql.connector.connect(**self.db_config)
+        cursor = conn.cursor()
+
+        query = """
+        SELECT humidity
         FROM measurements
         WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
         ORDER BY timestamp DESC

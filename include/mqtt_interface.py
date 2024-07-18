@@ -11,6 +11,7 @@ class DeviceType(Enum):
     LIGHT = 0
     FRIDGE = 1
     CO2 = 2
+    HEATER = 3
 
 class SocketDevice:
     def __init__(self, device_type):
@@ -52,7 +53,8 @@ class MQTT_Interface:
         self.lightSocket = SocketDevice(DeviceType.LIGHT)
         self.fridgeSocket = SocketDevice(DeviceType.FRIDGE)
         self.co2Socket = SocketDevice(DeviceType.CO2)
-        self.devices = [self.lightSocket, self.fridgeSocket, self.co2Socket]
+        self.heater = SocketDevice(DeviceType.HEATER)
+        self.devices = [self.lightSocket, self.fridgeSocket, self.co2Socket, self.heater]
         self.initDone = False
         self.devicesHealthy = False
 
@@ -245,6 +247,7 @@ class MQTT_Interface:
             self.client.subscribe(f"zigbee2mqtt/{self.devices[0].friendly_name}/availability")
             self.client.subscribe(f"zigbee2mqtt/{self.devices[1].friendly_name}/availability")
             self.client.subscribe(f"zigbee2mqtt/{self.devices[2].friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.devices[3].friendly_name}/availability")
             # self.client.subscribe("zigbee2mqtt/bridge/devices") # get device information
             self.fetchZigbeeDevicesFromBridge()
             self.availabiltyCheckCounter = 2
@@ -254,10 +257,12 @@ class MQTT_Interface:
         self.requestDeviceStateUpdate(self.devices[0].friendly_name)
         self.requestDeviceStateUpdate(self.devices[1].friendly_name)
         self.requestDeviceStateUpdate(self.devices[2].friendly_name)
+        self.requestDeviceStateUpdate(self.devices[3].friendly_name)
         
         self.checkDeviceAvailability(self.devices[0].friendly_name)
         self.checkDeviceAvailability(self.devices[1].friendly_name)
         self.checkDeviceAvailability(self.devices[2].friendly_name)
+        self.checkDeviceAvailability(self.devices[3].friendly_name)
         
         # add checks for this some other time
         # self.publish('zigbee2mqtt/bridge/request/health_check', '')
@@ -287,20 +292,22 @@ class MQTT_Interface:
             self.switch_off(self.devices[0].friendly_name)
             self.switch_off(self.devices[1].friendly_name)
             self.switch_off(self.devices[2].friendly_name)
+            self.switch_off(self.devices[3].friendly_name)
             
         if systemHealth.systemOverheated:
             self.switch_off(self.devices[0].friendly_name)
+            self.switch_off(self.devices[3].friendly_name)
         
         mqttInterfaceDebugging = False
         if (mqttInterfaceDebugging):
             print("--------------------------------------------------")
             print("Devices healthy: ", self.devicesHealthy)
             print("System oveheated: ", systemHealth.systemOverheated)
-            print("Devices availability: ", self.devices[0].availability, self.devices[1].availability, self.devices[2].availability)
-            print("Devices state: ", self.devices[0].state, self.devices[1].state, self.devices[2].state)
-            print("Devices manual override: ", self.devices[0].manualOverrideActive, self.devices[1].manualOverrideActive, self.devices[2].manualOverrideActive)
-            print("Devices manual override timer: ", self.devices[0].manualOverrideTimer, self.devices[1].manualOverrideTimer, self.devices[2].manualOverrideTimer)
-            print("Devices friendly name: ", self.devices[0].friendly_name, self.devices[1].friendly_name, self.devices[2].friendly_name)
+            print("Devices availability: ", self.devices[0].availability, self.devices[1].availability, self.devices[2].availability, self.devices[3].availability)
+            print("Devices state: ", self.devices[0].state, self.devices[1].state, self.devices[2].state , self.devices[3].state)
+            print("Devices manual override: ", self.devices[0].manualOverrideActive, self.devices[1].manualOverrideActive, self.devices[2].manualOverrideActive, self.devices[3].manualOverrideActive)
+            print("Devices manual override timer: ", self.devices[0].manualOverrideTimer, self.devices[1].manualOverrideTimer, self.devices[2].manualOverrideTimer, self.devices[3].manualOverrideTimer)
+            print("Devices friendly name: ", self.devices[0].friendly_name, self.devices[1].friendly_name, self.devices[2].friendly_name, self.devices[3].friendly_name)
             print("--------------------------------------------------")
         
         scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt, systemHealth,))
@@ -361,6 +368,22 @@ class MQTT_Interface:
             else:
                 self.switchLedvanceSocket_4058075729261(self.devices[1].friendly_name, state, "60", "10")
             return True
+        
+    def setHeaterState(self, state):
+        if self.devices[3].friendly_name == "":
+            # No light socket found, intializing
+            print("No heater socket found")
+            return False
+        else:
+            if self.devices[3].manualOverrideActive:
+                print("Heater is in manual override mode")
+                pass
+            else:
+                self.switchLedvanceSocket_4058075729261(self.devices[3].friendly_name, state, "60", "10")
+            return True
+        
+    def getHeaterState(self):
+        return self.devices[3].state
 
     def getFridgeState(self):
         return self.devices[1].state
