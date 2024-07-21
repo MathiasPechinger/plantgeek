@@ -59,13 +59,13 @@ class Heater:
             
             if temp < self.controlTemperature + self.hysteresis and temp > self.controlTemperature:
                 self.switch_on(mqtt_interface)
-                print("Switching on, keep histeresis going.")
+                # print("Switching on, keep histeresis going.")
             elif temp > self.controlTemperature + self.hysteresis:
                 self.switch_off(mqtt_interface)
-                print("Switching off")
+                # print("Switching off")
             elif temp < self.controlTemperature:
                 self.switch_on(mqtt_interface)
-                print("Switching on")
+                # print("Switching on")
             else:
                 print("Not supposed to happen!!!")
             

@@ -13,11 +13,13 @@ class Fridge:
         self.is_on = False
         self.off_time = None
         self.db_config = db_config
-        self.controlTemperature = 27.5
+        self.controlTemperatureNight = 17.5
+        self.controlTemperatureDay = 25.0
         self.temperatureHysteresis = 0.6
         self.controlHumidity = 45
         self.humidityHysteresis = 2
-        self.controlTemperatureFallback = 28.0
+        self.controlTemperatureFallbackMaxLevel = 28.0
+        self.controlTemperatureFallbackMinLevel = 19.5
         self.controlMode = ControlMode.HUMIDITY_CONTROL
         # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
@@ -57,9 +59,12 @@ class Fridge:
             
             self.sensorChecks(temp, sc, mqtt_interface)     
             
-            if temp > self.controlTemperatureFallback:
+            if temp > self.controlTemperatureFallbackMaxLevel:
                 # if the temperature is above the fallback temperature we switch on the fridge   
                 self.switch_on(mqtt_interface)
+            elif temp < self.controlTemperatureFallbackMinLevel:
+                # prevent freezing the plants
+                self.switch_off(mqtt_interface)
             else:
                 # regular operation
                 self.humidity_control(sc, humidity, mqtt_interface)
@@ -110,6 +115,15 @@ class Fridge:
                 print("Not supposed to happen!!!")
         
     def temperature_control(self, sc, temp, mqtt_interface):
+        
+        if mqtt_interface.getLightState() == True:
+            # if the light is on we switch off the fridge
+            self.controlTemperature = self.controlTemperatureDay
+        else:
+            self.controlTemperature = self.controlTemperatureNight
+            
+        print(f"Control temperature: {self.controlTemperature}")
+        
         if mqtt_interface.getFridgeState() == False:
             if temp > self.controlTemperature:
                 self.switch_on(mqtt_interface)
