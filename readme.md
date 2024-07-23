@@ -118,3 +118,15 @@ sudo apt-get install git curl build-essential
 * Frontend Credential Manager to connect to plant geek not implemented
 * Sensor type configuration selection not implemented (w/wo CO2 control)
 
+* fix this issue:
+-> automatic configuration of the zigbee gateway.
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://localhost
+serial:
+  port: /dev/ttyUSB0
+  adapter: deconz
+  baudrate: 115200
+
