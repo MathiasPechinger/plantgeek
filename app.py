@@ -9,6 +9,7 @@ import threading
 import psutil
 import logging
 import subprocess
+import json
 from functools import wraps
 from include.data_writer_mysql import SensorDataLogger
 from include.fridge_controller import Fridge
@@ -19,8 +20,18 @@ from include.fan_controller import Fan
 from include.mqtt_interface import MQTT_Interface
 from include.pump_controller import Pump
 from include.health_monitoring import HealthMonitor
-from include.camera_recorder import CameraRecorder
+# manually setup camera for usb or pi camera by using the correct recorder (todo automatic or ui choice)
+# from include.camera_recorder import CameraRecorder
+from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
+
+import faulthandler
+
+faulthandler.enable()
+
+
+CONFIG_FILE = 'config/config.json'
+
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -45,7 +56,7 @@ app = Flask(__name__)
 sensorsAlive = False
 databaseAlive = False
 
-# Apply the custom filter to the Flask app logger
+# Apply the custom filter to the Flask app logger 
 for handler in logging.getLogger('werkzeug').handlers:
     handler.addFilter(ExcludeLogsFilter())
 
@@ -62,6 +73,35 @@ def requires_auth(f):
             return abort(401)
         return f(*args, **kwargs)
     return decorated
+
+
+# Save the API key
+@app.route('/save_api_key', methods=['POST'])
+def save_api_key():
+    data = request.get_json()
+    api_key = data.get('api_key')
+    
+    if api_key:
+        with open(CONFIG_FILE, 'w') as config_file:
+            json.dump({'api_key': api_key}, config_file)
+            print(api_key)
+        return jsonify({"message": "API Key saved successfully!"}), 200
+    else:
+        return jsonify({"error": "No API Key provided"}), 400
+    
+    
+
+
+# Retrieve the API key
+@app.route('/get_api_key', methods=['GET'])
+def get_api_key():
+    try:
+        with open(CONFIG_FILE, 'r') as config_file:
+            config = json.load(config_file)
+            return jsonify({"api_key": config.get('api_key')}), 200
+    except FileNotFoundError:
+        return jsonify({"error": "API Key not found"}), 404
+
 
 @app.route('/reboot', methods=['POST'])
 @requires_auth
@@ -84,8 +124,16 @@ db_config = {
 # light = OutputDevice(17)
 # co2valve = OutputDevice(27)
 
-
-
+# Settings for frontend
+frontend_display_settings = {
+    "toggle_image_stream": False,
+    "toggle_fan_control": False,
+    "toggle_fridge_state": False,
+    "toggle_light_control": False,
+    "toggle_co2_control": False,
+    "toggle_zigbee_dashboard": False,
+    "toggle_environment_graph": False,
+}
 
 @app.route('/fridge_state')
 def fridge_state():
@@ -134,11 +182,22 @@ def zigbeePairing():
     
     return jsonify(response)
 
-
-
 @app.route('/')
 def index():
-    return render_template('index.html')
+    global frontend_display_settings
+
+    return render_template('index.html', display_settings=frontend_display_settings)
+
+@app.route('/update_toggle', methods=['POST'])
+def update_toggle():
+    global frontend_display_settings
+
+    toggle_id = request.form.get('toggle_id')
+    toggle_value = request.form.get('toggle_value')
+    if toggle_id and toggle_value is not None:
+        frontend_display_settings[toggle_id] = bool(toggle_value)
+        return jsonify({'status': 'success', 'toggle_id': toggle_id, 'toggle_value': toggle_value})
+    return jsonify({'status': 'failure', 'message': 'Invalid data'})
 
 @app.route('/data/rpi-temperature')
 def cpu_temp():
@@ -386,7 +445,7 @@ def run_scheduler(scheduler):
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
-sensorData = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
+sensorData = SensorDataLogger(use_dht22=True, use_scd41=False, use_ccs811=False)
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
@@ -402,7 +461,10 @@ def start_sensor_data_logger():
 if __name__ == '__main__':
     
     # Using PlanGeekBackend
-    plantGeekBackendInUse = True
+    plantGeekBackendInUse = False
+    
+    # Using CO2 control
+    activateCO2control = False
         
         
     scheduler_light = sched.scheduler(time.time, time.sleep)
@@ -413,7 +475,8 @@ if __name__ == '__main__':
     scheduler_mqtt = sched.scheduler(time.time, time.sleep)
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
-    scheduler_co2 = sched.scheduler(time.time, time.sleep)
+    if activateCO2control:
+        scheduler_co2 = sched.scheduler(time.time, time.sleep)
     
     
     if plantGeekBackendInUse:
@@ -436,7 +499,8 @@ if __name__ == '__main__':
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
     light = Light(db_config)
-    co2 = CO2()
+    if activateCO2control:
+        co2 = CO2()
     systemHealth = HealthMonitor()
     camera = CameraRecorder()
     
@@ -451,25 +515,39 @@ if __name__ == '__main__':
     scheduler_mqtt.enter(0, 1, mqtt_interface.mainloop,(scheduler_mqtt, systemHealth,))
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,))
     scheduler_camera.enter(0, 1, camera.record, (scheduler_camera,))
-    scheduler_co2 = sched.scheduler(time.time, time.sleep)
-    scheduler_co2.enter(0, 1, co2.control_co2, (scheduler_co2,mqtt_interface,sensorData,))
+    if activateCO2control:
+        scheduler_co2 = sched.scheduler(time.time, time.sleep)
+        scheduler_co2.enter(0, 1, co2.control_co2, (scheduler_co2,mqtt_interface,sensorData,))
 
     light.turn_light_off(mqtt_interface)
-    co2.close_co2_valve(mqtt_interface)
+    if activateCO2control:
+        co2.close_co2_valve(mqtt_interface)
     fridge.switch_off(mqtt_interface)
-    heater.switch_off(mqtt_interface)
 
-    threads = [
-        threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
+
+    
+    if activateCO2control:
+        threads = [
+            threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
         threading.Thread(target=run_scheduler, args=(scheduler_heater,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_light,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_health,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
-        threading.Thread(target=run_scheduler, args=(scheduler_co2,))
-    ]
+            threading.Thread(target=run_scheduler, args=(scheduler_light,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_health,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_co2,))
+        ]
+    else:
+        threads = [
+            threading.Thread(target=run_scheduler, args=(scheduler_fridge,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_light,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_mqtt,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_health,)),
+            threading.Thread(target=run_scheduler, args=(scheduler_camera,))
+        ]
 
     for thread in threads:
         thread.start()

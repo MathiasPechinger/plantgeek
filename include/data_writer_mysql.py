@@ -25,6 +25,8 @@ class SensorDataLogger:
         self.currentHumidity = None
         self.currentCO2 = None
         self.lastTimestamp = None
+        self.dht22Temprature = None
+        self.dht22Humidity = None
 
         logging.basicConfig(filename='logs/data_writer.log', filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
 
@@ -53,26 +55,24 @@ class SensorDataLogger:
 
         self.cursor = self.db.cursor()
 
-    def read_sensor_data_dht22_ccs811(self):
+   
+    def read_sensor_data_dht22(self):
         try:
-            while not self.sensor.data_ready:
-                time.sleep(1)
-
-            temperature_c = self.dht_device.temperature
-            temperature_f = temperature_c * (9 / 5) + 32
-            humidity = self.dht_device.humidity
-
-            if self.sensor_error_logged:
-                logging.info("Sensor data successfully read, system is healthy again.")
-                self.sensor_error_logged = False
-
-            return temperature_c, temperature_f, humidity, self.sensor.eco2, self.sensor.tvoc
+            self.dht22Temprature = self.dht_device.temperature
+            self.dht22Humidity = self.dht_device.humidity
+            
+            # Check if the reading was successful
+            if self.dht22Humidity is not None and self.dht22Temprature is not None:
+                pass
+            else:
+                print('Failed to get reading. Try again!')
+            return
 
         except RuntimeError as err:
             if not self.sensor_error_logged:
                 logging.error("Error while reading sensor data: %s", err.args[0])
                 self.sensor_error_logged = True
-            return None
+            return
 
     def insert_data_to_db(self, data):
         query = "INSERT INTO measurements (temperature_c, humidity, eco2, light_state, fridge_state,co2_state) VALUES (%s, %s, %s, %s, %s, %s)"
@@ -86,6 +86,8 @@ class SensorDataLogger:
             self.scd4x = adafruit_scd4x.SCD4X(self.i2c)
             self.scd4x.start_periodic_measurement()
             time.sleep(5)
+        elif self.use_dht22:
+            self.dht_device = adafruit_dht.DHT22(board.D4)
         else:
             logging.error("Invalid sensor configuration. Exiting...")
             raise ValueError("Invalid sensor configuration.")
@@ -100,9 +102,25 @@ class SensorDataLogger:
             if not self.db.is_connected():
                 self.connect_to_mysql()
 
-            if self.use_ccs811 and self.use_dht22:
-                data = self.read_sensor_data_dht22_ccs811()
+                
+            if self.use_dht22:
+                self.read_sensor_data_dht22()
+                
+                self.currentTemperature = self.dht22Temprature
+                self.currentHumidity = self.dht22Humidity
+                self.currentCO2 = -1
+                self.lastTimestamp = time.time()
+                
+                data = (
+                    self.dht22Temprature,
+                    self.dht22Humidity,
+                    -1,
+                    mqtt_interface.getLightState(),
+                    mqtt_interface.getFridgeState(),
+                    mqtt_interface.getCO2State(),
+                )
                 data_available = True
+                
             elif self.use_scd41:
                 if self.scd4x.data_ready:
                     

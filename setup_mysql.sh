@@ -37,10 +37,12 @@ CREATE TABLE IF NOT EXISTS measurements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     temperature_c FLOAT,
-    temperature_f FLOAT,
     humidity FLOAT,
     eco2 INT,
-    tvoc INT
+    tvoc INT,
+    co2_state TINYINT,
+    fridge_state TINYINT,
+    light_state TINYINT
 );
 EOF
 

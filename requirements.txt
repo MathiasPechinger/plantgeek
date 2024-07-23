@@ -42,3 +42,5 @@ typing_extensions==4.11.0
 tzlocal==5.2
 urllib3==2.2.1
 Werkzeug==3.0.2
+numpy>=1.21.0
+simplejpeg>=1.4.0

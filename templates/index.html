@@ -11,7 +11,17 @@
         body { padding: 20px; }
         .dashboard { margin-top: 20px; }
         .card { margin-bottom: 20px; }
-        .card-header { background-color: #015d05; color: white; }
+        .card-header { 
+            background-color:#015d05; 
+            color: white; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
         .card-body { background-color: #f8f9fa; }
         .controls { margin-bottom: 20px; }
         
@@ -64,10 +74,50 @@
             animation: spin 2s linear infinite;
             display: none;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+       
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -83,18 +133,60 @@
     </div>
 
     <div class="card">
-        <div class="card-header">Live Stream</div>
-        <img id="webcamImage" src="static/cameraImages/latest/lastFrame.jpg" alt="Image" style="width: 100%; height: auto;">
+        <div class="card-header">
+            Live Stream
+            <label class="switch">
+                <input type="checkbox" id="toggle_image_stream" onchange="sendToggleStatus('toggle_image_stream', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_image_stream else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+        <div id="content_div_image_stream" style="display: {{'block' if display_settings.toggle_toggle_image_stream else 'none'}};">
+            <img id="webcamImage" src="static/cameraImages/latest/lastFrame.jpg" alt="Image" style="width: 100%; height: auto;">
+        </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Fan Control</div>
-        <div class="card-body">
-            <h5>Fan Speed</h5>
-            <input type="range" id="fan-speed" min="0" max="100" value="50" class="form-range" onchange="setFanSpeed(this.value)">
-            <p>Current Fan Speed: <span id="current-fan-speed">50</span>%</p>
+        <div class="card-header">
+            Fan Control
+            <label class="switch">
+                <input type="checkbox" id="toggle_fan_control" onchange="sendToggleStatus('toggle_fan_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_fan_control else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_fan_control" style="display: {{'block' if display_settings.toggle_toggle_fan_control else 'none'}};">
+            <div class="card-body">
+                <h5>Fan Speed</h5>
+                <input type="range" id="fan-speed" min="0" max="100" value="50" class="form-range" onchange="setFanSpeed(this.value)">
+                <p>Current Fan Speed: <span id="current-fan-speed">50</span>%</p>
+            </div>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-header">
+            API Key
+            <label class="switch">
+                <input type="checkbox" id="toggle_api_key" onchange="sendToggleStatus('toggle_api_key', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_api_key else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_api_key" style="display: {{'block' if display_settings.toggle_toggle_api_key else 'none'}};">
+            <div class="card-body">
+                <h5>Enter your API Key</h5>
+                <input type="text" id="api-key-input" class="form-control" placeholder="Enter your API Key">
+                <button onclick="saveApiKey()" class="btn btn-primary">Save API Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function saveApiKey() {
+            var apiKey = document.getElementById("api-key-input").value;
+            // TODO: Implement code to save the API key
+            console.log("API Key saved: " + apiKey);
+        }
+    </script>
 
     <!-- NOT USED RIGHT NOW -->
     <!-- <div class="card">
@@ -109,71 +201,110 @@
     </div> -->
 
     <div class="card">
-        <div class="card-header">Fridge State</div>
-        <div class="card-body">
-            <h5>Current State: <span id="fridge-state"></span></h5>
-            <div class="progress">
-                <div id="fridge-progress" class="progress-bar bg-success" role="progressbar" style="width: 20%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        <div class="card-header">
+            Fridge State
+            <label class="switch">
+                <input type="checkbox" id="toggle_fridge_state" onchange="sendToggleStatus('toggle_fridge_state', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_fridge_state else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_fridge_state" style="display: {{'block' if display_settings.toggle_fridge_state else 'none'}};">
+            <div class="card-body">
+                <h5>Current State: <span id="fridge-state"></span></h5>
+                <div class="progress">
+                    <div id="fridge-progress" class="progress-bar bg-success" role="progressbar" style="width: 20%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Light Control Dashboard</div>
-        <div class="card-body">
-            Current time: <span id="current-time"></span><br>
-            Time until light turns on again: <span id="time-until-on"></span><br>
-            Set Light On Time: <input type="time" id="light-on-time" class="form-control" style="width: auto; display: inline-block;">
-            Set Light Off Time: <input type="time" id="light-off-time" class="form-control" style="width: auto; display: inline-block;">
-            <button onclick="setLightTimes()" class="btn btn-info">Save Times</button><br>
+        <div class="card-header">
+            Light Control Dashboard
+            <label class="switch">
+                <input type="checkbox" id="toggle_light_control" onchange="sendToggleStatus('toggle_light_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_light_control else '' }}>
+                <span class="slider round"></span>
+            </label>
         </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">CO2 Control Dashboard</div>
-        <div class="card-body">
-            <!-- <button onclick="requestCO2(true)" class="btn btn-danger">Get CO2</button> -->
-             <p>CO2 Control is static and set up to be activated at 800ppm and shut down at 850ppm</p>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">Zigbee Dashboard</div>
-        <div class="card-body">
-            <button onclick="zigbeePairing(true)" class="btn btn-success">Enable</button>
-            <button onclick="zigbeePairing(false)" class="btn btn-danger">Disable</button>
-            <div class="placeholder">
-                <span id="pairing-text"></span>
-                <div id="pairing-circle" class="placeholder-circle"></div>
-
-            </div>
-            <div>
-                <!-- Device 1: <span id="zigbee_device1"></span><br> -->
-                <ul id="dynamic-list" class="list-group"></ul>
-                <p>Use the manual control function to identify which is the corresponding power socket. It will temperarily disable the scheduled system.</p>
-
+        <div id="content_div_light_control" style="display: {{'block' if display_settings.toggle_light_control else 'none'}};">
+            <div class="card-body">
+                Current time: <span id="current-time"></span><br>
+                Time until light turns on again: <span id="time-until-on"></span><br>
+                Set Light On Time: <input type="time" id="light-on-time" class="form-control" style="width: auto; display: inline-block;">
+                Set Light Off Time: <input type="time" id="light-off-time" class="form-control" style="width: auto; display: inline-block;">
+                <button onclick="setLightTimes()" class="btn btn-info">Save Times</button><br>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Temperature & Environment</div>
-        <div class="card-body">
-            CPU Temperature: <span id="cpu_temperature"></span><br>
-            RP1 ADC Temperature: <span id="rp1_adc_temperature"></span><br>
-            <button onclick="setTimeSpanDataBaseRetrieval(24)" class="btn btn-primary">24h</button>
-            <button onclick="setTimeSpanDataBaseRetrieval(12)" class="btn btn-primary">12h</button>
-            <button onclick="setTimeSpanDataBaseRetrieval(4)" class="btn btn-primary">4h</button>
-            <button onclick="setTimeSpanDataBaseRetrieval(1)" class="btn btn-primary">1h</button>
-            <h5>Temperature (C)</h5>
-            <p>Current Temperature: <span id="actual-temperature"></span></p>
-            <canvas id="temperatureChart" width="400" height="auto"></canvas><br>
-            <h5>Humidity (%)</h5>
-            <p>Current Humidity: <span id="actual-humidity"></span></p>
-            <canvas id="humidityChart" width="400" height="auto"></canvas><br>
-            <h5>CO2 (ppm)</h5>
-            <p>Current CO2: <span id="actual-eco2"></span></p>
-            <canvas id="eco2Chart" width="400" height="auto"></canvas><br>
+        <div class="card-header">
+            CO2 Control Dashboard
+            <label class="switch">
+                <input type="checkbox" id="toggle_co2_control" onchange="sendToggleStatus('toggle_co2_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_co2_control else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_co2_control" style="display: {{'block' if display_settings.toggle_co2_control else 'none'}};">
+            <div class="card-body">
+                <!-- <button onclick="requestCO2(true)" class="btn btn-danger">Get CO2</button> -->
+                <p>CO2 Control is static and set up to be activated at 800ppm and shut down at 850ppm</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Zigbee Dashboard
+            <label class="switch">
+                <input type="checkbox" id="toggle_zigbee_dashboard" onchange="sendToggleStatus('toggle_zigbee_dashboard', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_zigbee_dashboard else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_zigbee_dashboard" style="display: {{'block' if display_settings.toggle_zigbee_dashboard else 'none'}};">
+            <div class="card-body">
+                <button onclick="zigbeePairing(true)" class="btn btn-success">Enable</button>
+                <button onclick="zigbeePairing(false)" class="btn btn-danger">Disable</button>
+                <div class="placeholder">
+                    <span id="pairing-text"></span>
+                    <div id="pairing-circle" class="placeholder-circle"></div>
+
+                </div>
+                <div>
+                    <!-- Device 1: <span id="zigbee_device1"></span><br> -->
+                    <ul id="dynamic-list" class="list-group"></ul>
+                    <p>Use the manual control function to identify which is the corresponding power socket. It will temperarily disable the scheduled system.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Temperature & Environment
+            <label class="switch">
+                <input type="checkbox" id="toggle_environment_graph" onchange="sendToggleStatus('toggle_environment_graph', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_environment_graph else '' }}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_environment_graph" style="display: {{'block' if display_settings.toggle_environment_graph else 'none'}};">
+            <div class="card-body">
+                CPU Temperature: <span id="cpu_temperature"></span><br>
+                RP1 ADC Temperature: <span id="rp1_adc_temperature"></span><br>
+                <button onclick="setTimeSpanDataBaseRetrieval(24)" class="btn btn-primary">24h</button>
+                <button onclick="setTimeSpanDataBaseRetrieval(12)" class="btn btn-primary">12h</button>
+                <button onclick="setTimeSpanDataBaseRetrieval(4)" class="btn btn-primary">4h</button>
+                <button onclick="setTimeSpanDataBaseRetrieval(1)" class="btn btn-primary">1h</button>
+                <h5>Temperature (C)</h5>
+                <p>Current Temperature: <span id="actual-temperature"></span></p>
+                <canvas id="temperatureChart" width="400" height="auto"></canvas><br>
+                <h5>Humidity (%)</h5>
+                <p>Current Humidity: <span id="actual-humidity"></span></p>
+                <canvas id="humidityChart" width="400" height="auto"></canvas><br>
+                <h5>CO2 (ppm)</h5>
+                <p>Current CO2: <span id="actual-eco2"></span></p>
+                <canvas id="eco2Chart" width="400" height="auto"></canvas><br>
+            </div>
         </div>
     </div>
 

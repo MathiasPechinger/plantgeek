@@ -1,3 +1,5 @@
+let intervals = {};  // Object to store interval references
+
 function updateTemperatureDisplay() {
     const cpuTemperature = document.getElementById('cpu_temperature');
     const rp1AdcTemperature = document.getElementById('rp1_adc_temperature');
@@ -51,6 +53,65 @@ function setLightTimes() {
 //     .then(data => console.log(data))
 //     .catch(error => console.error('Error:', error));
 // }
+
+function sendToggleStatus(toggleId, toggleValue) {
+    // Update the visibility of the associated div
+    const divId = 'content_div' + toggleId.replace('toggle', '');
+    const associatedDiv = document.getElementById(divId);
+    
+    if (associatedDiv) {
+        if (toggleValue === 1) {
+            associatedDiv.style.display = 'block';
+        } else {
+            associatedDiv.style.display = 'none';
+        }
+    }
+
+    // Manage intervals
+    if (toggleValue === 1) {
+        startIntervals(toggleId);
+    } else {
+        stopIntervals(toggleId);
+    }
+
+    // Send the toggle status to the server
+    fetch('/update_toggle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'toggle_id': toggleId,
+            'toggle_value': toggleValue
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log(`Toggle ${data.toggle_id} updated to ${data.toggle_value}`);
+        } else {
+            console.error(`Failed to update toggle: ${data.message}`);
+        }
+    });
+}
+
+function saveApiKey() {
+    const api_key = document.getElementById('api-key-input').value;
+    $.ajax({
+        url: '/save_api_key',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({api_key: api_key}),
+        success: function(response) {
+            // console.log("Response: " + JSON.stringify(response));
+        },
+        error: function(xhr, status, error) {
+            console.log("Error: " + error);
+            console.log("Status: " + status);
+            console.dir(xhr);
+        }
+    });
+}
 
 function setPumpPower(power) {
     $.ajax({
@@ -619,23 +680,54 @@ function refreshImage() {
     img.src = '/static/cameraImages/latest/lastFrame.jpg?timestamp=' + new Date().getTime();
 }
 
-refreshImage();
-setInterval(refreshImage, 1000);
+function startIntervals(toggleId) {
+    if (!intervals[toggleId]) {
+        intervals[toggleId] = [];
+    }
 
-fetchData(); // Fetch data immediately
-setInterval(fetchData, 3000);
+    // Define the functions and time steps for each toggle
+    let intervalConfigs = [];
 
-fetchDataNow();
-setInterval(fetchDataNow, 3000);
+    switch(toggleId) {
+        case 'toggle_image_stream':
+            intervalConfigs = [
+                {func: refreshImage, timeStep: 1000},
+            ];
+            break;
+        case 'toggle_fridge_state':
+            intervalConfigs = [
+                {func: fetchFridgeState, timeStep: 3000}
+            ];
+            break;
+        case 'toggle_environment_graph':
+            intervalConfigs = [
+                {func: fetchData, timeStep: 3000},
+                {func: fetchDataNow, timeStep: 3000},
+                {func: fetchCPUTemperature, timeStep: 3000},
+                {func: updateTemperatureDisplay, timeStep: 3000}
+            ];
+            break;
+        case 'toggle_zigbee_dashboard':
+            intervalConfigs = [
+                {func: getZigbeeDevices, timeStep: 3000}
+            ];
+            break;
+        // Add more cases as needed for additional toggles
+        default:
+            console.error('Unknown toggle ID');
+            return;
+    }
 
-fetchFridgeState()
-setInterval(fetchFridgeState, 3000);
+    intervalConfigs.forEach(config => {
+        config.func();  // Execute the function immediately
+        const intervalId = setInterval(config.func, config.timeStep);
+        intervals[toggleId].push(intervalId);
+    });
+}
 
-fetchCPUTemperature();
-setInterval(fetchCPUTemperature, 3000);
-
-getZigbeeDevices();
-setInterval(getZigbeeDevices, 3000);
-
-
-setInterval(updateTemperatureDisplay, 3000);
+function stopIntervals(toggleId) {
+    if (intervals[toggleId]) {
+        intervals[toggleId].forEach(intervalId => clearInterval(intervalId));
+        intervals[toggleId] = null;
+    }
+}

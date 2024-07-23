@@ -1,13 +1,17 @@
 #!/bin/bash
 
 # Update package list
-sudo apt update
+sudo apt-get update
+sudo apt-get upgrade -y
 
-virtualenv venv
+sudo apt-get install python3-virtualenv -y
+
+
+python3 -m venv --system-site-packages venv # --system-site-packages must be added because there is a bug with venv and picamera2
 source venv/bin/activate
 pip install -r requirements.txt
 
-
+pip install --upgrade numpy simplejpeg # fixes an issue with picam
 
 # ----------------- Install Nginx -----------------
 # # Define variables
