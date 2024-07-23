@@ -11,7 +11,7 @@ class HealthMonitor:
         self.overheatTemperature = 30.5
         self.overheatHysteresis = 1.0
         
-    def check_status(self, sc, mqtt_interface, sensorData):
+    def check_status(self, sc, mqtt_interface, sensorData, zigbeeActivated):
         # Add your health check logic here
         # For example, you can check the status of various components or services
         # and update the self.status accordingly
@@ -40,9 +40,10 @@ class HealthMonitor:
             sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
             return
         
-        if not mqtt_interface.devicesHealthy:
-            self.systemHealthy = False
-            print("Zigbee devices not healthy.")
+        if zigbeeActivated:
+            if not mqtt_interface.devicesHealthy:
+                self.systemHealthy = False
+                print("Zigbee devices not healthy.")
             
         current_time = time.time()
         if sensorData.lastTimestamp == None:
