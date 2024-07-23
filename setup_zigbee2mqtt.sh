@@ -2,6 +2,9 @@
 
 # Zigbee Device Control with Raspberry Pi and Sonoff Zigbee 3.0 USB Dongle Plus
 
+# Needed for installing the serice
+SERVICE_DIR="$(pwd)"
+
 # -------------------------------------------------------------
 # Step 1: Prepare Your Raspberry Pi
 # -------------------------------------------------------------
@@ -33,10 +36,12 @@ mkdir -p ~/zigbee2mqtt
 cd ~/zigbee2mqtt
 
 echo "Cloning Zigbee2MQTT repository..."
-git clone https://github.com/Koenkk/zigbee2mqtt.git .
+git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git .
 
 echo "Installing Zigbee2MQTT dependencies..."
 npm ci
+
+npm run build
 
 # -------------------------------------------------------------
 # Step 5: Edit the configuration file
@@ -75,13 +80,14 @@ fi
 # -------------------------------------------------------------
 echo "Installing Zigbee2MQTT as a service..."
 
+cd $SERVICE_DIR
+
 # Get the username
 USERNAME=$(whoami)
 
 # Define variables
 WORKING_DIR="/home/$USERNAME/zigbee2mqtt"
 
-# SERVICE_DIR="$WORKING_DIR/services"
 # Print working directory
 echo "Working Directory: $WORKING_DIR"
 
@@ -89,8 +95,6 @@ echo "Working Directory: $WORKING_DIR"
 EXEC_START="/usr/bin/node"
 SCRIPT_PATH="$WORKING_DIR/index.js"
 SERVICE_FILE="/etc/systemd/system/drowbox_mqtt_interface.service"
-
-SERVICE_DIR="$(pwd)"
 
 echo "pwd: $(pwd)"
 

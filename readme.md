@@ -7,7 +7,28 @@ Growing in total darkness. Or not?
 
 this is a work in progress
 
+
+
+
 ## Setup guide:
+
+note for pi zero 2 w.
+increase the swap
+```
+sudo nano /etc/dphys-swapfile
+```
+
+CONF_SWAPSIZE=1024
+
+
+
+
+enable i2c using 
+
+```
+sudo raspi-config
+```
+
 
 ```
 chmod +x setup.sh
@@ -25,6 +46,18 @@ source venv/bin/activate
 ```
 
 ## Notes:
+
+### PiCam Support
+To use PiCam replace line 21 in app.py:
+
+'''
+from include.camera_recorder import CameraRecorder
+'''
+
+with
+'''
+from include.picamera_recorder import CameraRecorder
+'''
 
 ### Notes for DHT22 on Rasperry PI5
 Get the latest release from adafruit and install it 
@@ -58,6 +91,16 @@ sudo apt install phpmyadmin -y
 
 ```
 
+```
+sudo nano /etc/apache2/apache2.conf
+```
+Then add the following line to the end of the file.
+```
+Include /etc/phpmyadmin/apache.conf
+```
+Then restart apache
+
+sudo systemctl restart apache2
 
 ### manual installation of zigbee2mqtt
 
@@ -74,4 +117,16 @@ sudo apt-get install git curl build-essential
 * Enable/Disable Menu für Pump Control, Fan Control, etc.
 * Frontend Credential Manager to connect to plant geek not implemented
 * Sensor type configuration selection not implemented (w/wo CO2 control)
+
+* fix this issue:
+-> automatic configuration of the zigbee gateway.
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://localhost
+serial:
+  port: /dev/ttyUSB0
+  adapter: deconz
+  baudrate: 115200
 

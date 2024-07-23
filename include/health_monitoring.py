@@ -6,7 +6,7 @@ class HealthMonitor:
         self.systemOverheated = False
         self.initDone = False
         self.previousTemperature = None
-        self.temperatureFrozenTimeout = 60
+        self.temperatureFrozenTimeout = 300 #5 minutes
         self.temperatureFrozenCounter = 0
         self.overheatTemperature = 30.5
         self.overheatHysteresis = 1.0
