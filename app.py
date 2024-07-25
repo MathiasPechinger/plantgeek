@@ -445,7 +445,7 @@ def run_scheduler(scheduler):
     except Exception as e:
         logging.error(f"[run_scheduler] Scheduler error: {e}")
 
-sensorData = SensorDataLogger(use_dht22=True, use_scd41=False, use_ccs811=False)
+sensorData = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
     
 mqtt_interface = MQTT_Interface("localhost", 1883, "drow_mqtt", "drow4mqtt")
 
@@ -464,10 +464,10 @@ if __name__ == '__main__':
     plantGeekBackendInUse = False
     
     # Using CO2 control
-    activateCO2control = False
+    activateCO2control = True
     
     # Using MQTT interface
-    activateMQTTinterface = False
+    activateMQTTinterface = True
         
         
 
