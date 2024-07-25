@@ -20,10 +20,10 @@ class HealthMonitor:
             self.initDone = True
             self.systemHealthy = True
             self.previousTemperature = sensorData.currentTemperature
-            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData, zigbeeActivated,))
             return
         
-        # print("Checking system status...")
+        print("Checking system status...")
         
         self.systemHealthy = True
         
@@ -31,13 +31,13 @@ class HealthMonitor:
         if sensorData.currentTemperature == None:
             self.systemHealthy = False
             print("Temperature sensor data invalid.")
-            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData, zigbeeActivated,))
             return
             
         if sensorData.lastTimestamp == None:
             self.systemHealthy = False
             print("Sensor data no timestamp not updated.")
-            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+            sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData, zigbeeActivated,))
             return
         
         if zigbeeActivated:
@@ -73,7 +73,7 @@ class HealthMonitor:
                 self.systemOverheated = False
             
         # print("System healthy: ", self.systemHealthy)
-        sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData,))
+        sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData, zigbeeActivated,))
         return
 
     def get_status(self):
