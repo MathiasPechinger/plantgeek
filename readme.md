@@ -108,6 +108,20 @@ sudo systemctl restart apache2
 sudo apt-get install git curl build-essential
 ```
 
+### Setup of older raspi camera e.g.
+imx219:
+
+```
+sudo nano /boot/firmware/config.txt 
+#Find the line: camera_auto_detect=1, update it to:
+camera_auto_detect=0
+#Find the line: [all], add the following item under it:
+dtoverlay=imx219,cam0
+#Save and reboot.
+```
+
+Source: https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/
+
 # known issues:
 * there is no failsave for the fridge. if the socket looses its connection we have a problem. This was initallay sovled by the out shutwon after time but it seems like this is not stable for the china sockets ...
 

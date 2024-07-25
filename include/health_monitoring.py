@@ -23,7 +23,7 @@ class HealthMonitor:
             sc.enter(1, 1, self.check_status,(sc,mqtt_interface, sensorData, zigbeeActivated,))
             return
         
-        print("Checking system status...")
+        # print("Checking system status...")
         
         self.systemHealthy = True
         
