@@ -21,7 +21,6 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-
         .card-body { background-color: #f8f9fa; }
         .controls { margin-bottom: 20px; }
         
@@ -146,7 +145,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <!-- <div class="card">
         <div class="card-header">
             Fan Control
             <label class="switch">
@@ -161,9 +160,9 @@
                 <p>Current Fan Speed: <span id="current-fan-speed">50</span>%</p>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <div class="card">
+    <!-- <div class="card">
         <div class="card-header">
             API Key
             <label class="switch">
@@ -178,29 +177,9 @@
                 <button onclick="saveApiKey()" class="btn btn-primary">Save API Key</button>
             </div>
         </div>
-    </div>
-
-    <script>
-        function saveApiKey() {
-            var apiKey = document.getElementById("api-key-input").value;
-            // TODO: Implement code to save the API key
-            console.log("API Key saved: " + apiKey);
-        }
-    </script>
-
-    <!-- NOT USED RIGHT NOW -->
-    <!-- <div class="card">
-        <div class="card-header">Pump Control</div>
-        <div class="card-body">
-            <h5>Pump Power</h5>
-            <input type="range" id="pump-power" min="0" max="100" value="0" class="form-range" onchange="setPumpPower(this.value)">
-            <p>Current Pump Power: <span id="current-pump-power">0</span>%</p>
-            <input type="number" id="pump-time-input" min="0" max="5" value="0" class="form-control" style="width: auto; display: inline-block;" onchange="setPumpTime(this.value)">
-            <button onclick="activatePumpOnce()" class="btn btn-info">Activate Pump Once</button>
-        </div>
     </div> -->
 
-    <div class="card">
+    <!-- <div class="card">
         <div class="card-header">
             Fridge State
             <label class="switch">
@@ -216,9 +195,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <div class="card">
+    <!-- <div class="card">
         <div class="card-header">
             Light Control Dashboard
             <label class="switch">
@@ -235,9 +214,9 @@
                 <button onclick="setLightTimes()" class="btn btn-info">Save Times</button><br>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <div class="card">
+    <!-- <div class="card">
         <div class="card-header">
             CO2 Control Dashboard
             <label class="switch">
@@ -247,11 +226,10 @@
         </div>
         <div id="content_div_co2_control" style="display: {{'block' if display_settings.toggle_co2_control else 'none'}};">
             <div class="card-body">
-                <!-- <button onclick="requestCO2(true)" class="btn btn-danger">Get CO2</button> -->
                 <p>CO2 Control is static and set up to be activated at 800ppm and shut down at 850ppm</p>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <div class="card">
         <div class="card-header">
@@ -308,7 +286,131 @@
         </div>
     </div>
 
+    <div class="card">
+        <div class="card-header">
+            Configuration Settings
+            <label class="switch">
+                <input type="checkbox" id="toggle_configuration_settings" onchange="toggleConfigSettings()">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div id="content_div_configuration_settings" style="display: none;">
+            <div class="card-body">
+                <form id="configForm">
+                    <div class="form-group">
+                        <label for="api_key">API Key</label>
+                        <input type="text" class="form-control" id="api_key" name="api_key" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="light_switch_on_time">Light Switch On Time</label>
+                        <input type="time" class="form-control" id="light_switch_on_time" name="light_switch_on_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="light_switch_off_time">Light Switch Off Time</label>
+                        <input type="time" class="form-control" id="light_switch_off_time" name="light_switch_off_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="co2_target_value">CO2 Target Value</label>
+                        <input type="text" class="form-control" id="co2_target_value" name="co2_target_value" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="co2_hysteresis">CO2 Hysteresis</label>
+                        <input type="text" class="form-control" id="co2_hysteresis" name="co2_hysteresis" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="target_temperature_day">Target Temperature Day</label>
+                        <input type="text" class="form-control" id="target_temperature_day" name="target_temperature_day" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="target_temperature_night">Target Temperature Night</label>
+                        <input type="text" class="form-control" id="target_temperature_night" name="target_temperature_night" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature_hysteresis">Temperature Hysteresis</label>
+                        <input type="text" class="form-control" id="temperature_hysteresis" name="temperature_hysteresis" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="target_humidity">Target Humidity</label>
+                        <input type="text" class="form-control" id="target_humidity" name="target_humidity" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="humidity_hysteresis">Humidity Hysteresis</label>
+                        <input type="text" class="form-control" id="humidity_hysteresis" name="humidity_hysteresis" pattern="^\d+(\.\d+)?$" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <button onclick="rebootSystem()" class="btn btn-warning">Reboot System</button>
+
+    <script>
+        function saveApiKey() {
+            var apiKey = document.getElementById("api-key-input").value;
+            // TODO: Implement code to save the API key
+            console.log("API Key saved: " + apiKey);
+        }
+
+        function toggleConfigSettings() {
+            const isChecked = document.getElementById('toggle_configuration_settings').checked;
+            const contentDiv = document.getElementById('content_div_configuration_settings');
+            contentDiv.style.display = isChecked ? 'block' : 'none';
+        }
+
+        function populateConfigForm(config) {
+            document.getElementById('api_key').value = config.APIConfig.apiKey;
+            document.getElementById('co2_target_value').value = config.CO2Control.targetValue;
+            document.getElementById('co2_hysteresis').value = config.CO2Control.hysteresis;
+            document.getElementById('light_switch_on_time').value = config.LightControl.switchOnTime;
+            document.getElementById('light_switch_off_time').value = config.LightControl.switchOffTime;
+            document.getElementById('target_temperature_day').value = config.TemperatureControl.targetDayTemperature;
+            document.getElementById('target_temperature_night').value = config.TemperatureControl.targetNightTemperature;
+            document.getElementById('temperature_hysteresis').value = config.TemperatureControl.hysteresis;
+            document.getElementById('target_humidity').value = config.HumidityControl.targetHumidity;
+            document.getElementById('humidity_hysteresis').value = config.HumidityControl.hysteresis;
+        }
+
+        function fetchConfig() {
+            fetch('/config')
+                .then(response => response.json())
+                .then(data => {
+                    populateConfigForm(data);
+                })
+                .catch(error => console.error('Error fetching config:', error));
+        }
+
+        document.getElementById('configForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const jsonData = {};
+
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch('/save_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Configuration saved successfully!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to save configuration.');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchConfig();
+        });
+    </script>
 
     <script src="/static/js/script.js"></script>
 </body>

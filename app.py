@@ -74,17 +74,139 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+# Function to load the existing configuration
+# Function to load the existing configuration
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as file:
+            return json.load(file)
+    else:
+        return {
+            "PlanGeekBackend": {
+                "plantGeekBackendInUse": True
+            },
+            "CO2Control": {
+                "activateCO2control": True,
+                "targetValue": 1000,
+                "hysteresis": 50
+            },
+            "LightControl": {
+                "switchOnTime": "06:00",
+                "switchOffTime": "18:00"
+            },
+            "TemperatureControl": {
+                "targetDayTemperature": 25,
+                "targetNightTemperature": 18,
+                "hysteresis": 2
+            },
+            "HumidityControl": {
+                "targetHumidity": 60,
+                "hysteresis": 5
+            },
+            "MQTTInterface": {
+                "activateMQTTinterface": True
+            },
+            "APIConfig": {
+                "apiKey": ""
+            }
+        }
+        
+@app.route('/config', methods=['GET'])
+def get_config():
+    config = load_config()
+    return jsonify(config)
+
+def initConfigOnStartup():
+    config = load_config()
+    
+    if config['CO2Control']['activateCO2control']:
+        co2.set_co2_target_value(config['CO2Control']['targetValue'])
+        co2.set_co2_hysteresis(config['CO2Control']['hysteresis'])
+    
+    light.set_light_times(config['LightControl']['switchOnTime'], config['LightControl']['switchOffTime'])
+    
+    fridge.set_control_temperature_day(config['TemperatureControl']['targetDayTemperature'])
+    fridge.set_control_temperature_night(config['TemperatureControl']['targetNightTemperature'])
+    fridge.set_temperature_hysteresis(config['TemperatureControl']['hysteresis'])
+    
+    fridge.set_control_humidity(config['HumidityControl']['targetHumidity'])
+    fridge.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+    
+    heater.set_control_temperature(config['TemperatureControl']['targetDayTemperature'])
+    heater.set_hysteresis(config['TemperatureControl']['hysteresis'])
+
+@app.route('/save_config', methods=['POST'])
+def save_config():
+    data = request.get_json()
+    
+    config = load_config()
+    
+    # Update the configuration with provided data
+    if 'api_key' in data:
+        config['APIConfig']['apiKey'] = data['api_key']
+    
+    if 'co2_target_value' in data:
+        config['CO2Control']['targetValue'] = data['co2_target_value']
+        co2.set_co2_target_value(data['co2_target_value'])
+    
+    if 'co2_hysteresis' in data:
+        config['CO2Control']['hysteresis'] = data['co2_hysteresis']
+        co2.set_co2_hysteresis(data['co2_hysteresis'])
+    
+    if 'light_switch_on_time' in data:
+        config['LightControl']['switchOnTime'] = data['light_switch_on_time']
+    if 'light_switch_off_time' in data:
+        config['LightControl']['switchOffTime'] = data['light_switch_off_time']
+    if 'light_switch_on_time' in data and 'light_switch_off_time' in data:
+        light.set_light_times(data['light_switch_on_time'], data['light_switch_off_time'])
+    
+    if 'target_temperature_day' in data:
+        config['TemperatureControl']['targetDayTemperature'] = data['target_temperature_day']
+        fridge.set_control_temperature_day(data['target_temperature_day'])
+        heater.set_control_temperature(data['target_temperature_day'])
+
+    if 'target_temperature_night' in data:
+        config['TemperatureControl']['targetNightTemperature'] = data['target_temperature_night']
+        fridge.set_control_temperature_night(data['target_temperature_night'])
+    
+    if 'temperature_hysteresis' in data:
+        config['TemperatureControl']['hysteresis'] = data['temperature_hysteresis']
+        fridge.set_temperature_hysteresis(data['temperature_hysteresis'])
+        heater.set_hysteresis(data['temperature_hysteresis'])   
+    
+    if 'target_humidity' in data:
+        config['HumidityControl']['targetHumidity'] = data['target_humidity']
+        fridge.set_control_humidity(data['target_humidity'])
+    
+    if 'humidity_hysteresis' in data:
+        config['HumidityControl']['hysteresis'] = data['humidity_hysteresis']
+        fridge.set_humidity_hysteresis(data['humidity_hysteresis'])
+
+    # Save the updated configuration back to the file
+    with open(CONFIG_FILE, 'w') as config_file:
+        json.dump(config, config_file, indent=4)
+    
+    return jsonify({"message": "Configuration saved successfully!"}), 200
+
 
 # Save the API key
 @app.route('/save_api_key', methods=['POST'])
 def save_api_key():
     data = request.get_json()
     api_key = data.get('api_key')
-    
+    print("api_key: ", api_key)
     if api_key:
+        print("api_key: ", api_key)
+        # Load existing configuration
+        config = load_config()
+        
+        # Update the API key
+        config['APIConfig']['apiKey'] = api_key
+        
+        # Save the updated configuration back to the file
         with open(CONFIG_FILE, 'w') as config_file:
-            json.dump({'api_key': api_key}, config_file)
-            print(api_key)
+            json.dump(config, config_file, indent=4)
+        
         return jsonify({"message": "API Key saved successfully!"}), 200
     else:
         return jsonify({"error": "No API Key provided"}), 400
@@ -460,14 +582,30 @@ def start_sensor_data_logger():
 
 if __name__ == '__main__':
     
-    # Using PlanGeekBackend
-    plantGeekBackendInUse = True
     
-    # Using CO2 control
-    activateCO2control = True
+    # Load the JSON configuration file
+    with open(CONFIG_FILE, 'r') as file:
+        config = json.load(file)
+
+
+    # Access the configuration values
+    plantGeekBackendInUse = config['PlanGeekBackend']['plantGeekBackendInUse']
+    activateCO2control = config['CO2Control']['activateCO2control']
+    activateMQTTinterface = config['MQTTInterface']['activateMQTTinterface']
     
-    # Using MQTT interface
-    activateMQTTinterface = True
+    # Print the values to verify
+    # print(f"Plant Geek Backend In Use: {plantGeekBackendInUse}")
+    # print(f"Activate CO2 Control: {activateCO2control}")
+    # print(f"Activate MQTT Interface: {activateMQTTinterface}")
+        
+    # # Using PlanGeekBackend
+    # plantGeekBackendInUse = True
+    
+    # # Using CO2 control
+    # activateCO2control = True
+    
+    # # Using MQTT interface
+    # activateMQTTinterface = True
         
         
 
@@ -502,6 +640,10 @@ if __name__ == '__main__':
         co2 = CO2()
     systemHealth = HealthMonitor()
     camera = CameraRecorder()
+    
+    
+    initConfigOnStartup()
+    
     
     sensor_data_logger_thread = threading.Thread(target=start_sensor_data_logger)
     sensor_data_logger_thread.start()
