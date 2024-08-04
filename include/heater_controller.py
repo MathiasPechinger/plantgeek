@@ -11,10 +11,10 @@ class Heater:
         self.hysteresis = 0.3
         
     def set_control_temperature(self, temp):
-        self.controlTemperature = temp
+        self.controlTemperature = float(temp)
         
     def set_hysteresis(self, hysteresis):
-        self.hysteresis = hysteresis
+        self.hysteresis = float(hysteresis)
         
     def switch_on(self, mqtt_interface):
         minimum_off_time = 30 # todo set to 60
