@@ -7,7 +7,7 @@ class Heater:
         self.is_on = False
         self.off_time = None
         self.db_config = db_config
-        self.controlTemperature = 25.5
+        self.controlTemperature = 24.5
         self.hysteresis = 0.3
         
     def switch_on(self, mqtt_interface):

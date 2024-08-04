@@ -5,7 +5,7 @@ class Light:
     def __init__(self, db_config,):
         self.lightState = False
         self.db_config = db_config
-        self.light_on_time = datetime.time(4, 0)
+        self.light_on_time = datetime.time(2, 0)
         self.light_off_time = datetime.time(22, 0)
         
     def turn_light_on(self,mqtt_interface):

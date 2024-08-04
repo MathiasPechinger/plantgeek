@@ -461,7 +461,7 @@ def start_sensor_data_logger():
 if __name__ == '__main__':
     
     # Using PlanGeekBackend
-    plantGeekBackendInUse = False
+    plantGeekBackendInUse = True
     
     # Using CO2 control
     activateCO2control = True
