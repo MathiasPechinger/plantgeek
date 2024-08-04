@@ -5,10 +5,10 @@ class CO2:
         self.co2_hysteresis = 10
         
     def set_co2_target_value(self, value):
-        self.co2_target_value = value
+        self.co2_target_value = float(value)
         
     def set_co2_hysteresis(self, value):
-        self.co2_hysteresis = value
+        self.co2_hysteresis = float(value)
 
     def open_co2_valve(self, mqtt_interface):
         self.co2valve_state = True
