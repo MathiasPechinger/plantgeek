@@ -23,10 +23,6 @@ function updateTemperatureDisplay() {
     }
 }
 
-function updateTime() {
-    document.getElementById('current-time').innerText = new Date().toLocaleTimeString();
-    setTimeout(updateTime, 1000);
-}
 
 function setLightTimes() {
     const onTime = document.getElementById('light-on-time').value;
@@ -182,7 +178,6 @@ function setFanSpeed(speed) {
     });
 }
 
-updateTime(); // Initialize the time update
 
 
 function requestCO2(state) {

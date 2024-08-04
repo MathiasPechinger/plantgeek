@@ -1,6 +1,14 @@
 class CO2:
     def __init__(self):
         self.co2valve_state = False
+        self.co2_target_value = 800
+        self.co2_hysteresis = 10
+        
+    def set_co2_target_value(self, value):
+        self.co2_target_value = value
+        
+    def set_co2_hysteresis(self, value):
+        self.co2_hysteresis = value
 
     def open_co2_valve(self, mqtt_interface):
         self.co2valve_state = True
@@ -16,9 +24,9 @@ class CO2:
             sc.enter(5, 1, self.control_co2, (sc,mqtt_interface,sensorData,))
             return
                 
-        if sensorData.currentCO2 < 800:
+        if sensorData.currentCO2 < self.co2_target_value:
             self.open_co2_valve(mqtt_interface)
-        elif sensorData.currentCO2 > 810:
+        elif sensorData.currentCO2 > self.co2_target_value + self.co2_hysteresis:
             self.close_co2_valve(mqtt_interface)
         sc.enter(5, 1, self.control_co2, (sc,mqtt_interface,sensorData,))
            
