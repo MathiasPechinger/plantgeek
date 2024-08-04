@@ -19,7 +19,7 @@ class Fridge:
         self.controlHumidity = 45
         self.humidityHysteresis = 2
         self.controlTemperatureFallbackMaxLevel = 28.0
-        self.controlTemperatureFallbackMinLevel = 19.5
+        self.controlTemperatureFallbackMinLevel = 22.5
         self.controlMode = ControlMode.HUMIDITY_CONTROL
         # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
