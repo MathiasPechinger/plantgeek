@@ -91,6 +91,7 @@ function sendToggleStatus(toggleId, toggleValue) {
     });
 }
 
+// legacy function
 function saveApiKey() {
     const api_key = document.getElementById('api-key-input').value;
     $.ajax({

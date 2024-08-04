@@ -19,7 +19,7 @@ class Fridge:
         self.controlHumidity = 45
         self.humidityHysteresis = 2
         self.controlTemperatureFallbackMaxLevel = 28.0
-        self.controlTemperatureFallbackMinLevel = 22.5
+        self.controlTemperatureFallbackMinLevel = 17.0
         self.controlMode = ControlMode.HUMIDITY_CONTROL
         # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
@@ -70,7 +70,6 @@ class Fridge:
         
     def control_fridge(self, sc, mqtt_interface):
         
-        
         if self.controlMode == ControlMode.TEMPERATURE_CONTROL:
             temp = self.get_current_temp()
                     
@@ -120,7 +119,6 @@ class Fridge:
             return
         
     def humidity_control(self, sc, humidity, mqtt_interface):
-        
         if mqtt_interface.getFridgeState() == False:
             if humidity > self.controlHumidity:
                 self.switch_on(mqtt_interface)
@@ -133,14 +131,14 @@ class Fridge:
             # print(f"humidity: {humidity}, control humidity: {self.controlHumidity}, hysteresis: {self.humidityHysteresis}")
             
             if humidity > self.controlHumidity - self.humidityHysteresis and humidity < self.controlHumidity:
+                self.switch_on(mqtt_interface)
                 # print("Switching on, keep histeresis going.")
-                self.switch_on(mqtt_interface)
             elif humidity < self.controlHumidity - self.humidityHysteresis:
-                # print("Switching off")
                 self.switch_off(mqtt_interface)
+                # print("Switching off")
             elif humidity > self.controlHumidity:
-                # print("Switching on")
                 self.switch_on(mqtt_interface)
+                # print("Switching on")
             else:
                 print("Not supposed to happen!!!")
         
