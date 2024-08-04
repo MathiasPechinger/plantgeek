@@ -21,6 +21,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        
         .card-body { background-color: #f8f9fa; }
         .controls { margin-bottom: 20px; }
         
@@ -302,6 +303,10 @@
                         <input type="text" class="form-control" id="api_key" name="api_key" required>
                     </div>
                     <div class="form-group">
+                        <label for="username">API Key</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
                         <label for="light_switch_on_time">Light Switch On Time</label>
                         <input type="time" class="form-control" id="light_switch_on_time" name="light_switch_on_time" required>
                     </div>
@@ -360,6 +365,7 @@
 
         function populateConfigForm(config) {
             document.getElementById('api_key').value = config.APIConfig.apiKey;
+            document.getElementById('username').value = config.APIConfig.username;
             document.getElementById('co2_target_value').value = config.CO2Control.targetValue;
             document.getElementById('co2_hysteresis').value = config.CO2Control.hysteresis;
             document.getElementById('light_switch_on_time').value = config.LightControl.switchOnTime;

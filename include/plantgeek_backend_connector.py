@@ -17,6 +17,11 @@ class PlantGeekBackendConnector:
             'api_key': '2114aadec64001c77d394845971f63dc'
         }
         
+    def updateCredentials(self, username, api_key):
+        self.credentials = {
+            'username': username,
+            'api_key': api_key
+        }
 
     def sendImageToPlantGeekBackend(self, sc):
         try:
@@ -75,6 +80,8 @@ class PlantGeekBackendConnector:
 
                 # Prepare the data to be sent
                 data = {
+                    'username': self.credentials['username'],
+                    'api_key': self.credentials['api_key'],
                     'temperature_c': sensorData.currentTemperature,
                     'humidity': sensorData.currentHumidity,
                     'co2': sensorData.currentCO2,

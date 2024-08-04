@@ -125,6 +125,9 @@ def initConfigOnStartup():
     
     light.set_light_times(config['LightControl']['switchOnTime'], config['LightControl']['switchOffTime'])
     
+    if config['PlanGeekBackend']['plantGeekBackendInUse']:
+        plantGeekBackend.updateCredentials(config['APIConfig']['username'], config['APIConfig']['apiKey'])
+    
     fridge.set_control_temperature_day(config['TemperatureControl']['targetDayTemperature'])
     fridge.set_control_temperature_night(config['TemperatureControl']['targetNightTemperature'])
     fridge.set_temperature_hysteresis(config['TemperatureControl']['hysteresis'])
@@ -144,6 +147,12 @@ def save_config():
     # Update the configuration with provided data
     if 'api_key' in data:
         config['APIConfig']['apiKey'] = data['api_key']
+        
+    if 'username' in data:
+        config['APIConfig']['username'] = data['username']
+    
+    if 'api_key' in data and 'username' in data:
+        plantGeekBackend.updateCredentials(config['APIConfig']['username'], config['APIConfig']['apiKey'])
     
     if 'co2_target_value' in data:
         config['CO2Control']['targetValue'] = data['co2_target_value']
