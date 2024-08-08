@@ -1,0 +1,30 @@
+{
+    "PlanGeekBackend": {
+        "plantGeekBackendInUse": true
+    },
+    "CO2Control": {
+        "activateCO2control": true,
+        "targetValue": "800",
+        "hysteresis": "10"
+    },
+    "LightControl": {
+        "switchOnTime": "00:01",
+        "switchOffTime": "23:59"
+    },
+    "TemperatureControl": {
+        "targetDayTemperature": "22.0",
+        "targetNightTemperature": "20.0",
+        "hysteresis": "0.5"
+    },
+    "HumidityControl": {
+        "targetHumidity": "45",
+        "hysteresis": "2"
+    },
+    "MQTTInterface": {
+        "activateMQTTinterface": true
+    },
+    "APIConfig": {
+        "apiKey": "your_api_key",
+        "username": "your_user_name"
+    }
+}
