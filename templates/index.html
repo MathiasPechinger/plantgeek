@@ -12,7 +12,7 @@
         .dashboard { margin-top: 20px; }
         .card { margin-bottom: 20px; }
         .card-header { 
-            background-color:#015d05; 
+            background-color:#4CAF50; 
             color: white; 
             display: flex;
             align-items: center;
@@ -46,7 +46,7 @@
             justify-content: space-around;
         }
         .header-image img {
-            width: 30%;
+            width: 40%;
             height: auto;
         }
         .header-text h1 {
@@ -107,7 +107,7 @@
             transition: .4s;
         }
         input:checked + .slider {
-            background-color: #2196F3;
+            background-color: #1E3A5F;
         }
         input:checked + .slider:before {
             transform: translateX(26px);
@@ -119,17 +119,35 @@
         .slider.round:before {
             border-radius: 50%;
         }
+        .btn-warning {
+            background-color: #FFB74D; /* Change this to your desired color */
+            border-color: black; /* Change this to match the background color */
+            color: #fff; /* Optional: Change the text color */
+        }
+        .btn-success {
+            background-color: #1E3A5F; /* Change this to your desired color */
+            border-color: black; /* Change this to match the background color */
+            color: #fff; /* Optional: Change the text color */
+        }
+        .btn-danger {
+            background-color: #dc3545; /* Change this to your desired color */
+            border-color: black;; /* Change this to match the background color */
+            color: #fff; /* Optional: Change the text color */
+        }
+        .btn-primary {
+            background-color: #1E3A5F; /* Change this to your desired color */
+            border-color: black; /* Change this to match the background color */
+            color: #fff; /* Optional: Change the text color */
+        }
     </style>
 </head>
 <body>
     
     <div class="header-container">
-        <div class="header-image">
-            <!-- <img src="static/images/drow_logo.png" alt="Header Image"> -->
+        <div class="header-image" style="text-align: center;">
+            <img src="static/images/logoPlantGeek.PNG" alt="Header Image">
         </div>
-        <div class="header-text">
-            <h1>DrowBox alpha</h1>
-        </div>
+    </div>
     </div>
 
     <div class="card">
@@ -243,7 +261,7 @@
         <div id="content_div_zigbee_dashboard" style="display: {{'block' if display_settings.toggle_zigbee_dashboard else 'none'}};">
             <div class="card-body">
                 <button onclick="zigbeePairing(true)" class="btn btn-success">Enable</button>
-                <button onclick="zigbeePairing(false)" class="btn btn-danger">Disable</button>
+                <button onclick="zigbeePairing(false)" class="btn btn-warning">Disable</button>
                 <div class="placeholder">
                     <span id="pairing-text"></span>
                     <div id="pairing-circle" class="placeholder-circle"></div>
