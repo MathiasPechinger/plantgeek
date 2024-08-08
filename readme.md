@@ -108,4 +108,3 @@ dtoverlay=imx219,cam0
 Save and reboot.
 
 Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/)
-```
