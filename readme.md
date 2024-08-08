@@ -65,6 +65,7 @@ Open a powershell terminal and type
 ssh plantgeek@plantgeek
 ```
 After a successfull login you should see a screen like this:
+
 <img src="images/ssh_login.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
 
 * Install the software from github
@@ -73,17 +74,15 @@ Clone the Repo
 ```
 mkdir plantgeek
 cd plantgeek
-git clone git@github.com:MathiasPechinger/drowbox.git .
+git clone https://github.com/MathiasPechinger/plantgeek.git .
 ```
 
-setup the system
+setup the system (This takes about 7-8 minutes on a raspberry pi 5)
 ```
 ./setup.sh
 ```
 
 
-
-git@github.com:MathiasPechinger/drowbox.git
 
 
 ### Installation FAQ:
