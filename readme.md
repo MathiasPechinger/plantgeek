@@ -1,19 +1,100 @@
-# Drow Box
+# Plant Geek 
 
-Growing in total darkness. Or not?
-
-
-## note:
-
-this is a work in progress
+## Description:
+todo
 
 
+## Installation:
+
+### Installing the Raspberry Pi Image
+The instructions simply show how a basic raspberry image is installed.
+
+* Download the Raspberry Pi Imager
+* Install the image onto your SD Card
+
+  
+<img src="images/raspberryPiImages.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+
+* It is recommended to setup your wifi connection during installation. In this case you will not need to connect to a screen, keyboard etc.
+
+<img src="images/raspberryPiImages2.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+<img src="images/wifiSetup.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+
+* Activate SSH access using a password.
+
+<img src="images/sshSetup.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+
+* Your are all set -> Insert the SD card into your raspberry pi.
+
+### Sensor connection
+
+#### Environment Sensor
+
+Currently the SCD4x Sensor is supported. The sensor should be connected to the raspberry pi as given in the image below
+
+<img src="images/pi_connection.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
 
 
-## Setup guide:
+Note:
+SCD41 is tested and therefore recommended. SCD40 is being evaluated in the future (cheaper version with less accuarcy)
 
-note for pi zero 2 w.
-increase the swap
+The DTH22 is also supported by enabling it in the app.py file manually. This is not recommended, as the system in a closed environment needs active CO2 control, which is not possible with the DHT22
+
+#### Camera
+
+A camera must be connected using the CSI interface. Use the Cam/Disp0 interface port on your raspberry pi. 
+
+Hint: The support for USB cameras is discontinued as these have a tendendency to be unreliable.
+
+### Zigbee Gateway Connection
+
+Simply plugin your zigbee USB Stick. We recommend the zonoff zigbee bridge.
+
+Hint: We are currently testing the zigbee bridge from cobee as well, you may also try this one.
+
+
+**Congrats, we are done setting up the hardware of our raspberry pi.**
+
+### Software installation
+
+* Next we connect our raspberry pi to its powersupply
+* give the raspberry pi a 3 minutes and then login via ssh
+
+Open a powershell terminal and type
+```
+ssh plantgeek@plantgeek
+```
+After a successfull login you should see a screen like this:
+<img src="images/ssh_login.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+
+* Install the software from github
+
+Clone the Repo
+```
+mkdir plantgeek
+cd plantgeek
+git clone git@github.com:MathiasPechinger/drowbox.git .
+```
+
+setup the system
+```
+./setup.sh
+```
+
+
+
+git@github.com:MathiasPechinger/drowbox.git
+
+
+### Installation FAQ:
+
+
+
+#### Other platforms
+If you are using a platform with less ram than 4GB consider increasing the swap. The system should run on older version of raspberry pi or even an pi zero 2w. The installtion though is taking a long time and is not tested thoroughly.
+
+
+To increase the swap (pi zero 2w)
 ```
 sudo nano /etc/dphys-swapfile
 ```
@@ -21,94 +102,7 @@ sudo nano /etc/dphys-swapfile
 CONF_SWAPSIZE=1024
 
 
-
-
-enable i2c using 
-
-```
-sudo raspi-config
-```
-
-
-```
-chmod +x setup.sh
-./setup.sh
-```
-
-
-```
-sudo apt-get install python3-pip python3-vritualenv
-virtualenv venv
-```
-
-```
-source venv/bin/activate
-```
-
-## Notes:
-
-### PiCam Support
-To use PiCam replace line 21 in app.py:
-
-'''
-from include.camera_recorder import CameraRecorder
-'''
-
-with
-'''
-from include.picamera_recorder import CameraRecorder
-'''
-
-### Notes for DHT22 on Rasperry PI5
-Get the latest release from adafruit and install it 
-```
-cd Adafruit_Python_DHT-*
-python setup.py install --force-pi
-```
-Note: Do not use sudo! Otherwise it will be installed globally.
-
-
-Install more packages:
-
-```
-pip install Adafruit-Blinka
-pip install Adafruit_CircuitPython_CCS811
-```
-### Install libgpiod and its Python bindings
-```
-sudo apt-get install -y libgpiod2 libgpiod-dev
-pip install gpiod
-```
-
-
-### Debugging mysql database
-
-phpMyAdmin installation
-```
-sudo apt install apache2 -y
-sudo apt install php libapache2-mod-php php-mysql -y
-sudo apt install phpmyadmin -y
-
-```
-
-```
-sudo nano /etc/apache2/apache2.conf
-```
-Then add the following line to the end of the file.
-```
-Include /etc/phpmyadmin/apache.conf
-```
-Then restart apache
-
-sudo systemctl restart apache2
-
-### manual installation of zigbee2mqtt
-
-```
-sudo apt-get install git curl build-essential
-```
-
-### Setup of older raspi camera e.g.
+#### Setup of older raspi camera e.g.
 imx219:
 
 ```
@@ -121,26 +115,3 @@ dtoverlay=imx219,cam0
 ```
 
 Source: https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/
-
-# known issues:
-* there is no failsave for the fridge. if the socket looses its connection we have a problem. This was initallay sovled by the out shutwon after time but it seems like this is not stable for the china sockets ...
-
-
-# todo list
-* temperature control value not adjustable
-* Enable/Disable Menu für Pump Control, Fan Control, etc.
-* Frontend Credential Manager to connect to plant geek not implemented
-* Sensor type configuration selection not implemented (w/wo CO2 control)
-
-* fix this issue:
--> automatic configuration of the zigbee gateway.
-homeassistant: false
-permit_join: false
-mqtt:
-  base_topic: zigbee2mqtt
-  server: mqtt://localhost
-serial:
-  port: /dev/ttyUSB0
-  adapter: deconz
-  baudrate: 115200
-
