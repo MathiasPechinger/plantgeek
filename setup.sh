@@ -216,6 +216,8 @@ pip install -r requirements.txt
 
 pip install --upgrade numpy simplejpeg # fixes an issue with picam
 
+cp config/config.json.template config/config.json
+
 # # Define variables
 WORKING_DIR="$(pwd)"
 # SERVICE_DIR="$WORKING_DIR/services"
