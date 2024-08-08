@@ -1,7 +1,10 @@
 # Plant Geek 
 
 ## Description:
-todo
+This project creates a open source solution for your indoor garden utilizing a frdige. You have full control over environmental paramters such as temperature, humidity and C02. In addition you can control the light and setup daylight schedules.
+
+**The system is in active development**
+If you have any questions, please write an issue ticket. 
 
 
 ## Installation:
@@ -82,6 +85,7 @@ setup the system (This takes about 7-8 minutes on a raspberry pi 5)
 ./setup.sh
 ```
 
+The rest of the setup such as connecting zigbee socket can be done in the frontend.
 
 
 
