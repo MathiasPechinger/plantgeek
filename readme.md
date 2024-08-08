@@ -1,120 +1,111 @@
-# Plant Geek 
+# Plant Geek
 
-## Description:
-This project creates a open source solution for your indoor garden utilizing a frdige. You have full control over environmental paramters such as temperature, humidity and C02. In addition you can control the light and setup daylight schedules.
+## Description
+Plant Geek is an open-source solution for managing your indoor garden using a fridge. This system allows you to fully control environmental parameters such as temperature, humidity, and CO2 levels. Additionally, you can control the lighting and set up daylight schedules.
 
-**The system is in active development**
-If you have any questions, please write an issue ticket. 
+**The system is in active development.**
+If you have any questions, please open an issue ticket.
 
-
-## Installation:
+## Installation
 
 ### Installing the Raspberry Pi Image
-The instructions simply show how a basic raspberry image is installed.
+Follow these instructions to install a basic Raspberry Pi image:
 
-* Download the Raspberry Pi Imager
-* Install the image onto your SD Card
+1. Download the Raspberry Pi Imager.
+2. Install the image onto your SD card.
 
-  
-<img src="images/raspberryPiImages.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+<img src="images/raspberryPiImages.PNG" alt="Raspberry Pi Image Installation" style="height:50%; width:50%;">
 
-* It is recommended to setup your wifi connection during installation. In this case you will not need to connect to a screen, keyboard etc.
+3. It is recommended to set up your Wi-Fi connection during installation. This way, you won't need to connect a screen, keyboard, etc.
 
-<img src="images/raspberryPiImages2.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
-<img src="images/wifiSetup.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+<img src="images/raspberryPiImages2.PNG" alt="Wi-Fi Setup" style="height:50%; width:50%;">
+<img src="images/wifiSetup.PNG" alt="Wi-Fi Setup" style="height:50%; width:50%;">
 
-* Activate SSH access using a password.
+4. Activate SSH access using a password.
 
-<img src="images/sshSetup.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+<img src="images/sshSetup.PNG" alt="SSH Setup" style="height:50%; width:50%;">
 
-* Your are all set -> Insert the SD card into your raspberry pi.
+5. Insert the SD card into your Raspberry Pi.
 
-### Sensor connection
+### Sensor Connection
 
 #### Environment Sensor
+Currently, the SCD4x Sensor is supported. Connect the sensor to the Raspberry Pi as shown in the image below:
 
-Currently the SCD4x Sensor is supported. The sensor should be connected to the raspberry pi as given in the image below
+<img src="images/pi_connection.PNG" alt="Sensor Connection" style="height:50%; width:50%;">
 
-<img src="images/pi_connection.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+**Note:** The SCD41 is tested and recommended. The SCD40 is being evaluated for future use (it is a cheaper version with less accuracy).
 
-
-Note:
-SCD41 is tested and therefore recommended. SCD40 is being evaluated in the future (cheaper version with less accuarcy)
-
-The DTH22 is also supported by enabling it in the app.py file manually. This is not recommended, as the system in a closed environment needs active CO2 control, which is not possible with the DHT22
+The DHT22 is also supported by enabling it in the `app.py` file manually. However, it is not recommended as the system in a closed environment requires active CO2 control, which is not possible with the DHT22.
 
 #### Camera
+Connect a camera using the CSI interface. Use the Cam/Disp0 interface port on your Raspberry Pi.
 
-A camera must be connected using the CSI interface. Use the Cam/Disp0 interface port on your raspberry pi. 
-
-Hint: The support for USB cameras is discontinued as these have a tendendency to be unreliable.
+**Note:** Support for USB cameras is discontinued due to reliability issues.
 
 ### Zigbee Gateway Connection
+Plug in your Zigbee USB stick. We recommend the Zonoff Zigbee bridge.
 
-Simply plugin your zigbee USB Stick. We recommend the zonoff zigbee bridge.
+**Note:** We are currently testing the Zigbee bridge from Cobee. You may also try this one.
 
-Hint: We are currently testing the zigbee bridge from cobee as well, you may also try this one.
+**Congrats, we are done setting up the hardware of our Raspberry Pi.**
 
+### Software Installation
 
-**Congrats, we are done setting up the hardware of our raspberry pi.**
+1. Connect your Raspberry Pi to its power supply.
+2. Give the Raspberry Pi about 3 minutes to boot up, then log in via SSH.
 
-### Software installation
-
-* Next we connect our raspberry pi to its powersupply
-* give the raspberry pi a 3 minutes and then login via ssh
-
-Open a powershell terminal and type
-```
+Open a PowerShell terminal and type:
+```bash
 ssh plantgeek@plantgeek
 ```
-After a successfull login you should see a screen like this:
+After a successful login, you should see a screen like this:
 
-<img src="images/ssh_login.PNG" alt="Image Placeholder" style="height:50%; width:50%;">
+<img src="images/ssh_login.PNG" alt="SSH Login" style="height:50%; width:50%;">
 
-* Install the software from github
+3. Install the software from GitHub.
 
-Clone the Repo
-```
+Clone the repository:
+```bash
 mkdir plantgeek
 cd plantgeek
 git clone https://github.com/MathiasPechinger/plantgeek.git .
 ```
 
-setup the system (This takes about 7-8 minutes on a raspberry pi 5)
-```
+Set up the system (this takes about 7-8 minutes on a Raspberry Pi 5):
+```bash
 ./setup.sh
 ```
 
-The rest of the setup such as connecting zigbee socket can be done in the frontend.
+The rest of the setup, such as connecting the Zigbee socket, can be done in the frontend.
 
+### Installation FAQ
 
+#### Other Platforms
+If you are using a platform with less than 4GB of RAM, consider increasing the swap. The system should run on older versions of Raspberry Pi or even a Pi Zero 2W, although the installation may take longer and is not thoroughly tested.
 
-### Installation FAQ:
-
-
-
-#### Other platforms
-If you are using a platform with less ram than 4GB consider increasing the swap. The system should run on older version of raspberry pi or even an pi zero 2w. The installtion though is taking a long time and is not tested thoroughly.
-
-
-To increase the swap (pi zero 2w)
-```
+To increase the swap (Pi Zero 2W):
+```bash
 sudo nano /etc/dphys-swapfile
 ```
-
+Change the following line:
+```plaintext
 CONF_SWAPSIZE=1024
-
-
-#### Setup of older raspi camera e.g.
-imx219:
-
 ```
+
+#### Setup of Older Raspberry Pi Cameras (e.g., IMX219)
+```bash
 sudo nano /boot/firmware/config.txt 
-#Find the line: camera_auto_detect=1, update it to:
-camera_auto_detect=0
-#Find the line: [all], add the following item under it:
-dtoverlay=imx219,cam0
-#Save and reboot.
 ```
+Find the line `camera_auto_detect=1` and update it to:
+```plaintext
+camera_auto_detect=0
+```
+Find the line `[all]` and add the following item under it:
+```plaintext
+dtoverlay=imx219,cam0
+```
+Save and reboot.
 
-Source: https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/
+Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/)
+```
