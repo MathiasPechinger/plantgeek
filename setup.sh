@@ -139,19 +139,26 @@ mqtt:
   password: drow4mqtt
 serial:
   port: /dev/ttyUSB0
-availability:
-  active:
-    # Time after which an active device will be marked as offline in
-    # minutes (default = 10 minutes)
-    timeout: 1
-  passive:
-    # Time after which a passive device will be marked as offline in
-    # minutes (default = 1500 minutes aka 25 hours)
-    timeout: 1500
 EOL
-    echo "Default configuration file created at $CONFIG_FILE. Please update it with your MQTT user and password."
+    echo "Default configuration file created at $CONFIG_FILE."
 else
-    echo "Configuration file already exists. Please ensure it has the correct settings."
+    echo "Configuration file already exists. deleting and creating a new one."
+
+    rm $CONFIG_FILE
+
+    mkdir -p data
+    cat <<EOL > $CONFIG_FILE
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost:1883'
+  user: drow_mqtt
+  password: drow4mqtt
+serial:
+  port: /dev/ttyUSB0
+EOL
+    echo "Default configuration file created at $CONFIG_FILE."
 fi
 
 # -------------------------------------------------------------
