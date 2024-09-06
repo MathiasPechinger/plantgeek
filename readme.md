@@ -134,6 +134,20 @@ Change the following line:
 CONF_SWAPSIZE=1024
 ```
 
+#### Setup conbee 3
+You can use the conbee 3 gateway by modifying the zigebee configuration yaml and adding there two line:
+
+```
+  adapter: deconz
+  baudrate: 115200
+```
+
+You may also need to update the firmware of the conbee 3 gateway.
+
+For more information check this issue:
+https://github.com/Koenkk/zigbee2mqtt/issues/19955
+
+
 #### Setup of Older Raspberry Pi Cameras (e.g., IMX219)
 ```bash
 sudo nano /boot/firmware/config.txt 
