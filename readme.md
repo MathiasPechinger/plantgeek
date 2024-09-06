@@ -8,6 +8,8 @@ Plant Geek is an open-source solution for managing your indoor garden using a fr
 
 If you have any questions, please open an issue ticket.
 
+<img src="images/basil_sample.jpeg" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
 
 ### Frontend:
 
