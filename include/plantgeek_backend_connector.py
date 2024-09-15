@@ -64,7 +64,7 @@ class PlantGeekBackendConnector:
             sc.enter(300, 1, self.sendImageToPlantGeekBackend, (sc,))
             print(f"An error occurred: {str(e)}")
 
-    def sendDataToPlantGeekBackend(self, sc, sensorData):
+    def sendDataToPlantGeekBackend(self, sc, sensorData,mqtt_interface):
         try:
             # Send the login request
             login_response = requests.post(self.login_url, json=self.credentials, verify=False)
@@ -75,7 +75,7 @@ class PlantGeekBackendConnector:
 
                 if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
                     print('Data not ready yet')
-                    sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
+                    sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,mqtt_interface,))
                     return
 
                 # Prepare the data to be sent
@@ -85,6 +85,9 @@ class PlantGeekBackendConnector:
                     'temperature_c': sensorData.currentTemperature,
                     'humidity': sensorData.currentHumidity,
                     'co2': sensorData.currentCO2,
+                    'light_state': mqtt_interface.getLightState(),
+                    'fridge_state': mqtt_interface.getFridgeState(),
+                    'co2_state': mqtt_interface.getCO2State(),
                 }
 
 
@@ -107,7 +110,7 @@ class PlantGeekBackendConnector:
                 print(f'Failed to log in. Status code: {login_response.status_code}')
                 print('Response:', login_response.text)
                 
-            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
+            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,mqtt_interface,))
         except Exception as e:
-            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,))
+            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc,sensorData,mqtt_interface,))
             print(f"An error occurred: {str(e)}")
