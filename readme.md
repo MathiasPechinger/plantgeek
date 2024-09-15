@@ -1,10 +1,28 @@
 # Plant Geek
 
 ## Description
+
 Plant Geek is an open-source solution for managing your indoor garden using a fridge. This system allows you to fully control environmental parameters such as temperature, humidity, and CO2 levels. Additionally, you can control the lighting and set up daylight schedules.
 
 **The system is in active development.**
+
 If you have any questions, please open an issue ticket.
+
+<img src="images/basil_sample.jpeg" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
+
+### Frontend:
+
+
+<img src="images/frontend_camera.PNG" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
+<img src="images/frontend_zigbee.PNG" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
+<img src="images/frontend_sensor.PNG" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
+<img src="images/frontend_config.PNG" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
+
+
 
 ## Installation
 
@@ -77,9 +95,34 @@ Set up the system (this takes about 7-8 minutes on a Raspberry Pi 5):
 ./setup.sh
 ```
 
+you can login to your browser, which is connected to your local network by entering:
+```
+plantgeek:5000
+```
+
 The rest of the setup, such as connecting the Zigbee socket, can be done in the frontend.
 
 ### Installation FAQ
+
+#### Troubleshooting
+1. You can check if the system is running correctly by checking the services.
+```
+sudo systemctl status drowbox_webapp.service
+```
+Note: this is an old name of the system so don't worry, it will be changed in to future.
+
+2. You can execute the webapp manually to see comandline outputs
+Stop the current service
+```
+sudo systemctl stop drowbox_webapp.service
+```
+Source the environment and start the application
+```
+source venv/bin/activate
+python app.py
+```
+
+
 
 #### Other Platforms
 If you are using a platform with less than 4GB of RAM, consider increasing the swap. The system should run on older versions of Raspberry Pi or even a Pi Zero 2W, although the installation may take longer and is not thoroughly tested.
@@ -92,6 +135,20 @@ Change the following line:
 ```plaintext
 CONF_SWAPSIZE=1024
 ```
+
+#### Setup conbee 3
+You can use the conbee 3 gateway by modifying the zigebee configuration yaml and adding there two line:
+
+```
+  adapter: deconz
+  baudrate: 115200
+```
+
+You may also need to update the firmware of the conbee 3 gateway.
+
+For more information check this issue:
+https://github.com/Koenkk/zigbee2mqtt/issues/19955
+
 
 #### Setup of Older Raspberry Pi Cameras (e.g., IMX219)
 ```bash
