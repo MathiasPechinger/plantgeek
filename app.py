@@ -629,7 +629,7 @@ if __name__ == '__main__':
         plantGeekBackend = PlantGeekBackendConnector()
         
         scheduler_plantGeekBackend = sched.scheduler(time.time, time.sleep)
-        scheduler_plantGeekBackend.enter(2, 1, plantGeekBackend.sendDataToPlantGeekBackend, (scheduler_plantGeekBackend,sensorData,))
+        scheduler_plantGeekBackend.enter(2, 1, plantGeekBackend.sendDataToPlantGeekBackend, (scheduler_plantGeekBackend,sensorData,mqtt_interface,))
         plantGeekBackend_thread = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend,))
         plantGeekBackend_thread.start()
         
