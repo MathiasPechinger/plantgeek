@@ -8,6 +8,11 @@ Plant Geek is an open-source solution for managing your indoor garden using a fr
 
 If you have any questions, please open an issue ticket.
 
+You can support the project:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-%23FFDD00.svg?&logo=buy-me-a-coffee&style=flat-square)](https://www.buymeacoffee.com/plantgeek)
+
+
 <img src="images/basil_sample.jpeg" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
 
 
