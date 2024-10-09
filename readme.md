@@ -151,9 +151,12 @@ https://github.com/Koenkk/zigbee2mqtt/issues/19955
 
 
 #### Setup of Older Raspberry Pi Cameras (e.g., IMX219)
+
 ```bash
 sudo nano /boot/firmware/config.txt 
 ```
+##### imx219
+
 Find the line `camera_auto_detect=1` and update it to:
 ```plaintext
 camera_auto_detect=0
@@ -163,5 +166,11 @@ Find the line `[all]` and add the following item under it:
 dtoverlay=imx219,cam0
 ```
 Save and reboot.
+
+##### ov 5647
+#Find the line: camera_auto_detect=1, update it to:
+camera_auto_detect=0
+#Find the line: [all], add the following item under it:
+dtoverlay=ov5647
 
 Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/)
