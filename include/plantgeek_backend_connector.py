@@ -74,7 +74,8 @@ class PlantGeekBackendConnector:
                 "fridge_state": mqtt_interface.getFridgeState(),
                 "co2valve_state": mqtt_interface.getCO2State(),
                 "timestamp": datetime.utcnow().isoformat(),
-                "device_name": "device_1234"  # example device ID/name
+                "device_name": "device_1234",  # example device ID/name,
+                "heater_state": mqtt_interface.getHeaterState()
             }
 
             # Send the POST request
