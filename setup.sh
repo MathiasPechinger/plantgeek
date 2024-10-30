@@ -157,6 +157,7 @@ mqtt:
   password: drow4mqtt
 serial:
   port: /dev/ttyUSB0
+frontend: true
 EOL
     echo "Default configuration file created at $CONFIG_FILE."
 fi
