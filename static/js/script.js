@@ -727,3 +727,23 @@ function stopIntervals(toggleId) {
         intervals[toggleId] = null;
     }
 }
+
+function saveDeviceName() {
+    const deviceName = document.getElementById('device-name').value;
+    fetch('/save_config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ device_name: deviceName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Device name saved:', data);
+        alert('Device name saved successfully!');
+    })
+    .catch(error => {
+        console.error('Error saving device name:', error);
+        alert('Error saving device name');
+    });
+}

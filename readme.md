@@ -34,12 +34,12 @@ You can support the project:
 ### Installing the Raspberry Pi Image
 Follow these instructions to install a basic Raspberry Pi image:
 
-1. Download the Raspberry Pi Imager.
-2. Install the image onto your SD card.
+1. Download the Raspberry Pi Imager (https://www.raspberrypi.com/software/).
+2. Install the image onto your SD card (see Image).
 
 <img src="images/raspberryPiImages.PNG" alt="Raspberry Pi Image Installation" style="height:50%; width:50%;">
 
-3. It is recommended to set up your Wi-Fi connection during installation. This way, you won't need to connect a screen, keyboard, etc.
+3. It is recommended to set up your Wi-Fi connection during installation (5GHz Wifi). This way, you won't need to connect a screen, keyboard, etc.
 
 <img src="images/raspberryPiImages2.PNG" alt="Wi-Fi Setup" style="height:50%; width:50%;">
 <img src="images/wifiSetup.PNG" alt="Wi-Fi Setup" style="height:50%; width:50%;">
@@ -69,7 +69,7 @@ Connect a camera using the CSI interface. Use the Cam/Disp0 interface port on yo
 ### Zigbee Gateway Connection
 Plug in your Zigbee USB stick. We recommend the Zonoff Zigbee bridge.
 
-**Note:** We are currently testing the Zigbee bridge from Cobee. You may also try this one.
+**Note:** We are currently testing the Zigbee bridge from Conbee. You may also try this one.
 
 **Congrats, we are done setting up the hardware of our Raspberry Pi.**
 
@@ -107,6 +107,11 @@ plantgeek:5000
 
 The rest of the setup, such as connecting the Zigbee socket, can be done in the frontend.
 
+4. Connect Zigbee Devices:
+
+Go to your Browser and access the zigbee2mqtt frontend via: plantgeek:8080
+Now you can connect you Zigbee sockets.
+
 ### Installation FAQ
 
 #### Troubleshooting
@@ -127,7 +132,9 @@ source venv/bin/activate
 python app.py
 ```
 
+#### Connectivity Issues with Zigbee Sockets
 
+If you are living in a city your tranmission channel might be full. You can change it on plantgeek:8080
 
 #### Other Platforms
 If you are using a platform with less than 4GB of RAM, consider increasing the swap. The system should run on older versions of Raspberry Pi or even a Pi Zero 2W, although the installation may take longer and is not thoroughly tested.
