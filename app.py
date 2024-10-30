@@ -640,8 +640,6 @@ if __name__ == '__main__':
         
         plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend)
         
-    fan = Fan(PWMOutputDevice(13), 90) 
-    pump = Pump(PWMOutputDevice(12), 5, 50)
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
     light = Light(db_config)
@@ -672,7 +670,8 @@ if __name__ == '__main__':
         scheduler_heater.enter(0, 1, heater.control_heater, (scheduler_heater,mqtt_interface,))
         
     scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,activateMQTTinterface,))
-    scheduler_camera.enter(0, 1, camera.record, (scheduler_camera,))
+    scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
+
     
     if activateCO2control:
         scheduler_co2 = sched.scheduler(time.time, time.sleep)

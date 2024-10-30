@@ -9,6 +9,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 class PlantGeekBackendConnector:
     def __init__(self):
         self.data_url = 'https://writesysteminfo-jimd7cggoa-uc.a.run.app'
+        self.image_url = 'https://uploadimage-jimd7cggoa-uc.a.run.app'
         self.credentials = {
             'username': 'undefined',
             'api_key': 'undefined'
@@ -22,33 +23,39 @@ class PlantGeekBackendConnector:
         }
 
     def sendImageToPlantGeekBackend(self, sc):
-        # try:
-        #     # Send the login request with timeout
-        #     login_response = requests.post(self.login_url, json=self.credentials, verify=False, timeout=self.timeout)
+        file_path = 'static/cameraImages/latest/lastFrame.jpg'
 
-        #     if login_response.status_code == 200:
-        #         access_token = login_response.json().get('access_token')
-        #         file_path = 'static/cameraImages/latest/lastFrame.jpg'
-        #         files = {'file': open(file_path, 'rb')}
-        #         headers = {'Authorization': f'Bearer {access_token}'}
+        try:
+            headers = {
+                "x-api-key": self.credentials['api_key'],
+                "x-user-id": self.credentials['username'],
+                "Content-Type": "image/jpeg"  # Add content type header
+            }
 
-        #         # Send the image with timeout
-        #         data_response = requests.post(self.image_url, headers=headers, files=files, verify=False, timeout=self.timeout)
-
-        #         if data_response.status_code != 200:
-        #             print(f'Failed to send data. Status code: {data_response.status_code}')
-        #             print('Response:', data_response.text)
-        #     else:
-        #         print(f'Failed to log in. Status code: {login_response.status_code}')
-        #         print('Response:', login_response.text)
+            # Read the file as binary data
+            with open(file_path, 'rb') as img_file:
+                image_data = img_file.read()
                 
-        # except (Timeout, ConnectionError) as e:
-        #     print(f"Connection error or timeout: {str(e)}")
-        # except Exception as e:
-        #     print(f"An error occurred: {str(e)}")
-        # finally:
-        
-        sc.enter(300, 1, self.sendImageToPlantGeekBackend, (sc,))
+            # Send the POST request with raw image data
+            response = requests.post(
+                self.image_url,
+                headers=headers,
+                data=image_data,  # Send raw image data instead of using files
+                timeout=self.timeout,
+                verify=False
+            )
+            
+            if response.status_code == 200:
+                print("Image uploaded successfully:", response.text)
+            else:
+                print("Image upload failed:", response.status_code, response.text)
+
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred while uploading image: {str(e)}")
+            
+        finally:
+            # here we set the image upload interval
+            sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,))
 
     def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface):
         try:
@@ -92,4 +99,6 @@ class PlantGeekBackendConnector:
         except Exception as e:
             print(f"An error occurred: {str(e)}")
         finally:
-            sc.enter(60, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
+            # here we set the backend update interval
+            backend_update_interval = 60*1
+            sc.enter(backend_update_interval, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
