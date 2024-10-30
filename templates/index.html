@@ -360,6 +360,10 @@
                         <label for="humidity_hysteresis">Humidity Hysteresis</label>
                         <input type="text" class="form-control" id="humidity_hysteresis" name="humidity_hysteresis" pattern="^\d+(\.\d+)?$" required>
                     </div>
+                    <div class="form-group">
+                        <label for="device_name">Device Name:</label>
+                        <input type="text" class="form-control" id="device_name" name="device_name" required>
+                    </div>
                     <button type="submit" class="btn btn-primary">Save Configuration</button>
                 </form>
             </div>
@@ -393,6 +397,7 @@
             document.getElementById('temperature_hysteresis').value = config.TemperatureControl.hysteresis;
             document.getElementById('target_humidity').value = config.HumidityControl.targetHumidity;
             document.getElementById('humidity_hysteresis').value = config.HumidityControl.hysteresis;
+            document.getElementById('device_name').value = config.PlanGeekBackend.deviceName;
         }
 
         function fetchConfig() {

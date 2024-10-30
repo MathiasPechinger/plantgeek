@@ -14,6 +14,7 @@ class PlantGeekBackendConnector:
             'username': 'undefined',
             'api_key': 'undefined'
         }
+        self.device_name = 'device_1234'  # Default device name
         self.timeout = 10  # Set a timeout of 10 seconds
 
     def updateCredentials(self, username, api_key):
@@ -21,6 +22,9 @@ class PlantGeekBackendConnector:
             'username': username,
             'api_key': api_key
         }
+        
+    def updateDeviceName(self, device_name):
+        self.device_name = device_name
 
     def sendImageToPlantGeekBackend(self, sc):
         file_path = 'static/cameraImages/latest/lastFrame.jpg'
@@ -29,7 +33,8 @@ class PlantGeekBackendConnector:
             headers = {
                 "x-api-key": self.credentials['api_key'],
                 "x-user-id": self.credentials['username'],
-                "Content-Type": "image/jpeg"  # Add content type header
+                "x-device-name": self.device_name,
+                "Content-Type": "image/jpeg"
             }
 
             # Read the file as binary data
@@ -81,7 +86,7 @@ class PlantGeekBackendConnector:
                 "fridge_state": mqtt_interface.getFridgeState(),
                 "co2valve_state": mqtt_interface.getCO2State(),
                 "timestamp": datetime.utcnow().isoformat(),
-                "device_name": "device_1234",  # example device ID/name,
+                "device_name": self.device_name,  # example device ID/name,
                 "heater_state": mqtt_interface.getHeaterState()
             }
 

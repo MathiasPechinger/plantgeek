@@ -1,6 +1,7 @@
 {
     "PlanGeekBackend": {
-        "plantGeekBackendInUse": true
+        "plantGeekBackendInUse": false,
+        "deviceName": "AwesomeGrowBox"
     },
     "CO2Control": {
         "activateCO2control": true,

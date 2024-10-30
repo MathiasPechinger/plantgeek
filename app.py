@@ -83,7 +83,8 @@ def load_config():
     else:
         return {
             "PlanGeekBackend": {
-                "plantGeekBackendInUse": True
+                "plantGeekBackendInUse": True,
+                "deviceName": "device_1234"
             },
             "CO2Control": {
                 "activateCO2control": True,
@@ -145,6 +146,10 @@ def save_config():
     config = load_config()
     
     # Update the configuration with provided data
+    if 'device_name' in data:
+        config['PlanGeekBackend']['deviceName'] = data['device_name']
+        plantGeekBackend.updateDeviceName(data['device_name'])
+    
     if 'api_key' in data:
         config['APIConfig']['apiKey'] = data['api_key']
         
