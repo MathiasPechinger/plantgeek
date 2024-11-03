@@ -639,11 +639,11 @@ if __name__ == '__main__':
         plantGeekBackend_thread.start()
         
         scheduler_plantGeekBackend2 = sched.scheduler(time.time, time.sleep)
-        scheduler_plantGeekBackend2.enter(2, 1, plantGeekBackend.sendImageToPlantGeekBackend, (scheduler_plantGeekBackend2,))
+        scheduler_plantGeekBackend2.enter(2, 1, plantGeekBackend.sendImageToPlantGeekBackend, (scheduler_plantGeekBackend2,mqtt_interface,))
         plantGeekBackend_thread2 = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend2,))
         plantGeekBackend_thread2.start()
         
-        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend)
+        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend, mqtt_interface)
         
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
