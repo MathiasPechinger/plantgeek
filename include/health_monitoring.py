@@ -8,7 +8,7 @@ class HealthMonitor:
         self.previousTemperature = None
         self.temperatureFrozenTimeout = 300 #5 minutes
         self.temperatureFrozenCounter = 0
-        self.overheatTemperature = 30.5
+        self.overheatTemperature = 33.5
         self.overheatHysteresis = 1.0
         
     def check_status(self, sc, mqtt_interface, sensorData, zigbeeActivated):
