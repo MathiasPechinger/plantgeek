@@ -629,6 +629,7 @@ if __name__ == '__main__':
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
        
+    camera = CameraRecorder()
     
     if plantGeekBackendInUse:
         plantGeekBackend = PlantGeekBackendConnector()
@@ -639,11 +640,11 @@ if __name__ == '__main__':
         plantGeekBackend_thread.start()
         
         scheduler_plantGeekBackend2 = sched.scheduler(time.time, time.sleep)
-        scheduler_plantGeekBackend2.enter(2, 1, plantGeekBackend.sendImageToPlantGeekBackend, (scheduler_plantGeekBackend2,mqtt_interface,))
+        scheduler_plantGeekBackend2.enter(2, 1, plantGeekBackend.sendImageToPlantGeekBackend, (scheduler_plantGeekBackend2,mqtt_interface,camera,))
         plantGeekBackend_thread2 = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend2,))
         plantGeekBackend_thread2.start()
         
-        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend, mqtt_interface)
+        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend, mqtt_interface, camera)
         
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
@@ -651,7 +652,6 @@ if __name__ == '__main__':
     if activateCO2control:
         co2 = CO2()
     systemHealth = HealthMonitor()
-    camera = CameraRecorder()
     
     
     initConfigOnStartup()

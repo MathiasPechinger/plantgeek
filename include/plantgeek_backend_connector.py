@@ -26,13 +26,12 @@ class PlantGeekBackendConnector:
     def updateDeviceName(self, device_name):
         self.device_name = device_name
 
-    def sendImageToPlantGeekBackend(self, sc, mqtt_interface):
-        file_path = 'static/cameraImages/latest/lastFrame.jpg'
+    def sendImageToPlantGeekBackend(self, sc, mqtt_interface, camera):
 
         # Don't send image if light is off (it is night)
         if not mqtt_interface.getLightState():
             print("Light is off, skipping image upload")
-            sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,))
+            sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
 
         try:
             headers = {
@@ -43,8 +42,7 @@ class PlantGeekBackendConnector:
             }
 
             # Read the file as binary data
-            with open(file_path, 'rb') as img_file:
-                image_data = img_file.read()
+            image_data = camera.get_latest_image()
                 
             # Send the POST request with raw image data
             response = requests.post(
@@ -64,8 +62,8 @@ class PlantGeekBackendConnector:
             print(f"An error occurred while uploading image: {str(e)}")
             
         finally:
-            # here we set the image upload interval
-            sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,))
+            # here we set the image upload interval ( this is limited in the backend as well ;) Just in case you wanted to increase it)
+            sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
 
     def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface):
         try:
