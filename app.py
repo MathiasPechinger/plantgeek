@@ -128,6 +128,7 @@ def initConfigOnStartup():
     
     if config['PlanGeekBackend']['plantGeekBackendInUse']:
         plantGeekBackend.updateCredentials(config['APIConfig']['username'], config['APIConfig']['apiKey'])
+        plantGeekBackend.updateDeviceName(config['PlanGeekBackend']['deviceName'])
     
     fridge.set_control_temperature_day(config['TemperatureControl']['targetDayTemperature'])
     fridge.set_control_temperature_night(config['TemperatureControl']['targetNightTemperature'])

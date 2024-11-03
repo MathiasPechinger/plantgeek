@@ -10,12 +10,12 @@ class CameraRecorder:
         camera_config = self.camera.create_still_configuration()  # Use default native resolution
         self.camera.configure(camera_config)
         self.camera.start()
-        self.counter = 0
+        self.targetCounter = 3600
+        self.counter = self.targetCounter-60
         self.lock = threading.Lock()
 
     def record(self, scheduler_camera, mqtt_interface):  # Add mqtt_interface parameter
-        # Only save images if light is on
-        scheduler_timer = 1
+        scheduler_timer = 1 # time in seconds
         
         with self.lock:
             temp_path = "static/cameraImages/latest/tempFrame.jpg"
@@ -23,10 +23,11 @@ class CameraRecorder:
             self.camera.capture_file(temp_path)
             os.replace(temp_path, final_path)
         
+        # Only save images if light is on
         if mqtt_interface.getLightState():
             # Save an image to cameraimages/storage every hour
             self.counter += 1
-            if self.counter >= 3600/scheduler_timer:  # Every hour (60 minutes)
+            if self.counter >= self.targetCounter/scheduler_timer:  # Every hour (60 minutes)
                 current_time = datetime.datetime.now()
                 storage_path = f"static/cameraImages/storage/{current_time.strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
                 with self.lock:
