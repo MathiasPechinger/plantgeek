@@ -66,13 +66,13 @@ class PlantGeekBackendConnector:
             sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
 
     def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface):
-        try:
             
-            if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
-                print('Data not ready yet')
-                sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
-                return
+        if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
+            print('Data not ready yet')
+            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
+            return
 
+        try:
             # Headers including the API key
             headers = {
                 "Content-Type": "application/json",

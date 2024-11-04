@@ -645,7 +645,7 @@ if __name__ == '__main__':
         plantGeekBackend_thread2 = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend2,))
         plantGeekBackend_thread2.start()
         
-        plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend, mqtt_interface, camera)
+        # plantGeekBackend.sendImageToPlantGeekBackend(scheduler_plantGeekBackend, mqtt_interface, camera)
         
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
