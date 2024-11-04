@@ -93,6 +93,9 @@ class PlantGeekBackendConnector:
                 "heater_state": mqtt_interface.getHeaterState()
             }
 
+            print("Sending data to PlantGeek backend:", data)
+            print("username:", self.credentials['username'])
+
             # Send the POST request
             response = requests.post(self.data_url, headers=headers, json=data)
 
@@ -107,6 +110,6 @@ class PlantGeekBackendConnector:
         except Exception as e:
             print(f"An error occurred: {str(e)}")
         finally:
-            # here we set the backend update interval
+            # here we set the data upload interval ( this is limited in the backend as well ;) Just in case you wanted to increase it)
             backend_update_interval = 60*1
             sc.enter(backend_update_interval, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
