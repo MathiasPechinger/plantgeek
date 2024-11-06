@@ -32,6 +32,7 @@ class PlantGeekBackendConnector:
         if not mqtt_interface.getLightState():
             print("Light is off, skipping image upload")
             sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
+            return
 
         try:
             headers = {
