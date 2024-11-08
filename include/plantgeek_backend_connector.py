@@ -3,9 +3,6 @@ import urllib3
 from requests.exceptions import Timeout, ConnectionError
 from datetime import datetime
 
-# Disable SSL warnings for self-signed certificates (development only, TODO!!!!) 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 class PlantGeekBackendConnector:
     def __init__(self):
         self.data_url = 'https://writesysteminfo-jimd7cggoa-uc.a.run.app'
@@ -51,7 +48,7 @@ class PlantGeekBackendConnector:
                 headers=headers,
                 data=image_data,  # Send raw image data instead of using files
                 timeout=self.timeout,
-                verify=False
+                verify=True
             )
             
             if response.status_code == 200:
