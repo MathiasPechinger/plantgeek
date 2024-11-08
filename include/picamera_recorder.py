@@ -3,6 +3,7 @@ import shutil
 import datetime
 import threading
 import os
+import sys
 
 class CameraRecorder:
     def __init__(self, camera_index=0):
@@ -23,6 +24,15 @@ class CameraRecorder:
             self.camera.capture_file(temp_path)
             os.replace(temp_path, final_path)
         
+        # Check available disk space before saving the image
+        disk_usage = shutil.disk_usage("/")  # Get disk usage for root directory
+        free_space = disk_usage.free  # Free space in bytes
+        required_space = 1024 * 1024 * 500  # Set required space (500 MB)
+
+        if free_space < required_space:
+            print("Warning: Not enough disk space. No new image will be stored.")
+            return  # Exit the method if there's not enough space
+
         # Only save images if light is on
         if mqtt_interface.getLightState():
             # Save an image to cameraimages/storage every hour
