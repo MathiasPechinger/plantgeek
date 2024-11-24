@@ -20,7 +20,7 @@ class CO2:
         
     def control_co2(self, sc, mqtt_interface, sensorData):
         if sensorData.currentCO2 is None:
-            print('CO2 data not ready yet')
+            # print('CO2 data not ready yet')
             sc.enter(5, 1, self.control_co2, (sc,mqtt_interface,sensorData,))
             return
                 

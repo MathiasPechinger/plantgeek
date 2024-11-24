@@ -79,75 +79,86 @@ class SensorDataLogger:
         self.cursor.execute(query, data)
 
     def initialize_sensors(self):
-        if self.use_ccs811 and self.use_dht22:
-            self.sensor = CCS811(self.i2c)
-            self.dht_device = adafruit_dht.DHT22(board.D4)
-        elif self.use_scd41:
-            self.scd4x = adafruit_scd4x.SCD4X(self.i2c)
-            self.scd4x.start_periodic_measurement()
-            time.sleep(5)
-        elif self.use_dht22:
-            self.dht_device = adafruit_dht.DHT22(board.D4)
-        else:
-            logging.error("Invalid sensor configuration. Exiting...")
-            raise ValueError("Invalid sensor configuration.")
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                if self.use_ccs811 and self.use_dht22:
+                    self.sensor = CCS811(self.i2c)
+                    self.dht_device = adafruit_dht.DHT22(board.D4)
+                elif self.use_scd41:
+                    self.scd4x = adafruit_scd4x.SCD4X(self.i2c)
+                    self.scd4x.start_periodic_measurement()
+                    time.sleep(5)
+                elif self.use_dht22:
+                    self.dht_device = adafruit_dht.DHT22(board.D4)
+                else:
+                    logging.error("Invalid sensor configuration. Exiting...")
+                    raise ValueError("Invalid sensor configuration.")
+                return True
+            except (RuntimeError, OSError) as e:
+                logging.error(f"Attempt {attempt + 1}/{max_retries} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    logging.error("Failed to initialize sensors after all retries")
+                    return False
 
     def run(self, mqtt_interface):
         self.connect_to_mysql()
-        self.initialize_sensors()
+        sensor_init_success = self.initialize_sensors()
         data_available = False
         
-
         while True:
-            if not self.db.is_connected():
-                self.connect_to_mysql()
+            try:
+                if not self.db.is_connected():
+                    self.connect_to_mysql()
+                
+                if not sensor_init_success:
+                    logging.error("Attempting sensor reinitialization...")
+                    sensor_init_success = self.initialize_sensors()
+                    if not sensor_init_success:
+                        time.sleep(5)
+                        continue
 
-                
-            if self.use_dht22:
-                self.read_sensor_data_dht22()
-                
-                self.currentTemperature = self.dht22Temprature
-                self.currentHumidity = self.dht22Humidity
-                self.currentCO2 = -1
-                self.lastTimestamp = time.time()
-                
-                data = (
-                    self.dht22Temprature,
-                    self.dht22Humidity,
-                    -1,
-                    mqtt_interface.getLightState(),
-                    mqtt_interface.getFridgeState(),
-                    mqtt_interface.getCO2State(),
-                )
-                data_available = True
-                
-            elif self.use_scd41:
-                if self.scd4x.data_ready:
-                    
-                    self.currentTemperature = self.scd4x.temperature
-                    self.currentHumidity = self.scd4x.relative_humidity
-                    self.currentCO2 = self.scd4x.CO2
-                    self.lastTimestamp = time.time()
-                    
-                    data = (
-                        self.scd4x.temperature,
-                        self.scd4x.relative_humidity,
-                        self.scd4x.CO2,
-                        mqtt_interface.getLightState(),
-                        mqtt_interface.getFridgeState(),
-                        mqtt_interface.getCO2State(),
-                    )
-                    data_available = True
-            else:
-                logging.error("Invalid sensor configuration. Exiting...")
-                break
+                if self.use_scd41:
+                    try:
+                        if self.scd4x.data_ready:
+                            self.currentTemperature = self.scd4x.temperature
+                            self.currentHumidity = self.scd4x.relative_humidity
+                            self.currentCO2 = self.scd4x.CO2
+                            self.lastTimestamp = time.time()
+                            
+                            data = (
+                                self.scd4x.temperature,
+                                self.scd4x.relative_humidity,
+                                self.scd4x.CO2,
+                                mqtt_interface.getLightState(),
+                                mqtt_interface.getFridgeState(),
+                                mqtt_interface.getCO2State(),
+                            )
+                            data_available = True
+                    except (RuntimeError, OSError) as e:
+                        logging.error(f"I2C error: {str(e)}")
+                        # Reset the sensor connection
+                        sensor_init_success = False
+                        self.currentTemperature = None
+                        self.currentHumidity = None
+                        self.currentCO2 = None
+                        time.sleep(5)
+                        continue
 
-            if data_available:
-                self.insert_data_to_db(data)
-                self.db.commit()
-                data_available = False
+                if data_available:
+                    self.insert_data_to_db(data)
+                    self.db.commit()
+                    data_available = False
 
-            time.sleep(5.0)
+                time.sleep(5.0)
+                
+            except Exception as e:
+                logging.error(f"Error in main loop: {str(e)}")
+                time.sleep(5)
 
 # if __name__ == "__main__":
 #     logger = SensorDataLogger(use_dht22=False, use_scd41=True, use_ccs811=False)
