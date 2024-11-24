@@ -631,12 +631,13 @@ if __name__ == '__main__':
     scheduler_camera = sched.scheduler(time.time, time.sleep)
        
     camera = CameraRecorder()
+    systemHealth = HealthMonitor()
     
     if plantGeekBackendInUse:
         plantGeekBackend = PlantGeekBackendConnector()
         
         scheduler_plantGeekBackend = sched.scheduler(time.time, time.sleep)
-        scheduler_plantGeekBackend.enter(2, 1, plantGeekBackend.sendDataToPlantGeekBackend, (scheduler_plantGeekBackend,sensorData,mqtt_interface,))
+        scheduler_plantGeekBackend.enter(20, 1, plantGeekBackend.sendDataToPlantGeekBackend, (scheduler_plantGeekBackend,sensorData,mqtt_interface,systemHealth,))
         plantGeekBackend_thread = threading.Thread(target=run_scheduler, args=(scheduler_plantGeekBackend,))
         plantGeekBackend_thread.start()
         
@@ -650,7 +651,7 @@ if __name__ == '__main__':
     light = Light(db_config)
     if activateCO2control:
         co2 = CO2()
-    systemHealth = HealthMonitor()
+
     
     
     initConfigOnStartup()
@@ -673,7 +674,7 @@ if __name__ == '__main__':
         scheduler_fridge.enter(0, 1, fridge.control_fridge, (scheduler_fridge,mqtt_interface,))
         scheduler_heater.enter(0, 1, heater.control_heater, (scheduler_heater,mqtt_interface,))
         
-    scheduler_health.enter(0, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,activateMQTTinterface,))
+    scheduler_health.enter(10, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,activateMQTTinterface,)) # 10 seconds delay to allow for bootup
     scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
 
     
@@ -716,5 +717,10 @@ if __name__ == '__main__':
 
     for thread in threads:
         thread.start()
+
+    scheduler_health_reporting = sched.scheduler(time.time, time.sleep)
+    scheduler_health_reporting.enter(2, 1, plantGeekBackend.sendHealthErrorsToBackend, (scheduler_health_reporting, systemHealth,))
+    health_reporting_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_reporting,))
+    health_reporting_thread.start()
 
     app.run(debug=False, host='0.0.0.0')

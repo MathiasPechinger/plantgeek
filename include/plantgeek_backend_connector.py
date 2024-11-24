@@ -7,6 +7,7 @@ class PlantGeekBackendConnector:
     def __init__(self):
         self.data_url = 'https://writesysteminfo-jimd7cggoa-uc.a.run.app'
         self.image_url = 'https://uploadimage-jimd7cggoa-uc.a.run.app'
+        self.health_url = 'https://receivehealtherrors-jimd7cggoa-uc.a.run.app'
         self.credentials = {
             'username': 'undefined',
             'api_key': 'undefined'
@@ -63,11 +64,11 @@ class PlantGeekBackendConnector:
             # here we set the image upload interval ( this is limited in the backend as well ;) Just in case you wanted to increase it)
             sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
 
-    def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface):
+    def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface, health_monitor):
             
         if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
-            print('Data not ready yet')
-            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
+            # print('Data not ready yet')
+            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface, health_monitor))
             return
 
         try:
@@ -88,11 +89,12 @@ class PlantGeekBackendConnector:
                 "co2valve_state": mqtt_interface.getCO2State(),
                 "timestamp": datetime.utcnow().isoformat(),
                 "device_name": self.device_name,  # example device ID/name,
-                "heater_state": mqtt_interface.getHeaterState()
+                "heater_state": mqtt_interface.getHeaterState(),
+                "system_healthy": health_monitor.get_status()  # Add system health state
             }
 
-            print("Sending data to PlantGeek backend:", data)
-            print("username:", self.credentials['username'])
+            # print("Sending data to PlantGeek backend:", data)
+            # print("username:", self.credentials['username'])
 
             # Send the POST request
             response = requests.post(self.data_url, headers=headers, json=data)
@@ -110,4 +112,49 @@ class PlantGeekBackendConnector:
         finally:
             # here we set the data upload interval ( this is limited in the backend as well ;) Just in case you wanted to increase it)
             backend_update_interval = 60*1
-            sc.enter(backend_update_interval, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface,))
+            sc.enter(backend_update_interval, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface, health_monitor))
+
+    def sendHealthErrorsToBackend(self, sc, health_monitor):
+        # print("Sending health errors to PlantGeek backend")
+        active_errors = health_monitor.get_active_errors()
+        if not active_errors:
+            # print("No active errors")
+            sc.enter(60, 1, self.sendHealthErrorsToBackend, (sc, health_monitor,))
+            return
+
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": self.credentials['api_key'],
+                "x-user-id": self.credentials['username']
+            }
+            
+            error_data = {
+                "device_name": self.device_name,
+                "timestamp": datetime.utcnow().isoformat(),
+                "errors": [
+                    {
+                        "code": error.code.value,
+                        "message": error.message,
+                        "timestamp": error.timestamp.isoformat()
+                    }
+                    for error in active_errors
+                ]
+            }
+            
+            # print("Sending health errors to PlantGeek backend:")
+            # print(error_data)
+            response = requests.post(
+                self.health_url,
+                headers=headers,
+                json=error_data,
+                timeout=self.timeout
+            )
+            
+            # Clear error history after successful send
+            health_monitor.clear_error_history()
+            
+        except Exception as e:
+            print(f"Error sending health data: {str(e)}")
+        finally:
+            sc.enter(60, 1, self.sendHealthErrorsToBackend, (sc, health_monitor,))
