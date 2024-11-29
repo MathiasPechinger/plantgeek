@@ -75,7 +75,7 @@ class SensorDataLogger:
             return
 
     def insert_data_to_db(self, data):
-        query = "INSERT INTO measurements (temperature_c, humidity, eco2, light_state, fridge_state,co2_state) VALUES (%s, %s, %s, %s, %s, %s)"
+        query = "INSERT INTO measurements (temperature_c, humidity, eco2, light_state, fridge_state,co2_state, heater_state) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         self.cursor.execute(query, data)
 
     def initialize_sensors(self):
@@ -137,6 +137,7 @@ class SensorDataLogger:
                                 mqtt_interface.getLightState(),
                                 mqtt_interface.getFridgeState(),
                                 mqtt_interface.getCO2State(),
+                                mqtt_interface.getHeaterState(),
                             )
                             data_available = True
                     except (RuntimeError, OSError) as e:

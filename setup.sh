@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS measurements (
     tvoc INT,
     co2_state TINYINT,
     fridge_state TINYINT,
-    light_state TINYINT
+    light_state TINYINT,
+    heater_state TINYINT
 );
 EOF
 

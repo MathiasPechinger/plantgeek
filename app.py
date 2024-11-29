@@ -75,7 +75,6 @@ def requires_auth(f):
     return decorated
 
 # Function to load the existing configuration
-# Function to load the existing configuration
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as file:
@@ -370,7 +369,7 @@ def data():
     # """
     
     query = """
-    SELECT temperature_c, humidity, eco2, light_state, fridge_state, co2_state
+    SELECT temperature_c, humidity, eco2, light_state, fridge_state, co2_state, heater_state
     FROM measurements
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL {} HOUR)
     """.format(timeSpanDataFetching)
@@ -631,7 +630,7 @@ if __name__ == '__main__':
     scheduler_camera = sched.scheduler(time.time, time.sleep)
        
     camera = CameraRecorder()
-    systemHealth = HealthMonitor()
+    systemHealth = HealthMonitor(config)
     
     if plantGeekBackendInUse:
         plantGeekBackend = PlantGeekBackendConnector()
@@ -718,9 +717,17 @@ if __name__ == '__main__':
     for thread in threads:
         thread.start()
 
-    scheduler_health_reporting = sched.scheduler(time.time, time.sleep)
-    scheduler_health_reporting.enter(2, 1, plantGeekBackend.sendHealthErrorsToBackend, (scheduler_health_reporting, systemHealth,))
-    health_reporting_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_reporting,))
-    health_reporting_thread.start()
+    if plantGeekBackendInUse:   
+        # Add health warning reporting scheduler
+        scheduler_health_warning = sched.scheduler(time.time, time.sleep)
+        scheduler_health_warning.enter(2, 1, plantGeekBackend.sendWarningsToBackend, (scheduler_health_warning, systemHealth,))
+        health_warning_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_warning,))
+        health_warning_thread.start()
+
+        # Existing schedulers
+        scheduler_health_reporting = sched.scheduler(time.time, time.sleep)
+        scheduler_health_reporting.enter(2, 1, plantGeekBackend.sendHealthErrorsToBackend, (scheduler_health_reporting, systemHealth,))
+        health_reporting_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_reporting,))
+        health_reporting_thread.start()
 
     app.run(debug=False, host='0.0.0.0')
