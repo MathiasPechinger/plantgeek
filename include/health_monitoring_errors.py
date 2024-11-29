@@ -10,10 +10,26 @@ class HealthErrorCode(Enum):
     TEMPERATURE_SENSOR_FROZEN = 1005
     SYSTEM_OVERHEATED = 1006
 
+class HealthWarningCode(Enum):
+    TEMPERATURE_CONTROL_LOW = 2001
+    TEMPERATURE_CONTROL_HIGH = 2002
+    CO2_CONTROL_LOW = 2003
+    CO2_CONTROL_HIGH = 2004
+    HUMIDITY_CONTROL_LOW = 2005
+    HUMIDITY_CONTROL_HIGH = 2006
+
 @dataclass
 class HealthError:
     code: HealthErrorCode
     message: str
     timestamp: datetime
     resolved: bool = False
-    resolved_timestamp: datetime = None 
+    resolved_timestamp: datetime = None
+
+@dataclass
+class HealthWarning:
+    code: HealthWarningCode
+    message: str
+    timestamp: datetime
+    resolved: bool = False
+    resolved_timestamp: datetime = None

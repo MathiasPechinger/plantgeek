@@ -8,6 +8,7 @@ class PlantGeekBackendConnector:
         self.data_url = 'https://writesysteminfo-jimd7cggoa-uc.a.run.app'
         self.image_url = 'https://uploadimage-jimd7cggoa-uc.a.run.app'
         self.health_url = 'https://receivehealtherrors-jimd7cggoa-uc.a.run.app'
+        self.warning_url = 'https://receivehealthwarnings-jimd7cggoa-uc.a.run.app'
         self.credentials = {
             'username': 'undefined',
             'api_key': 'undefined'
@@ -53,7 +54,8 @@ class PlantGeekBackendConnector:
             )
             
             if response.status_code == 200:
-                print("Image uploaded successfully:", response.text)
+                # print("Image uploaded successfully:", response.text)
+                pass
             else:
                 print("Image upload failed:", response.status_code, response.text)
 
@@ -65,32 +67,34 @@ class PlantGeekBackendConnector:
             sc.enter(3600, 1, self.sendImageToPlantGeekBackend, (sc,mqtt_interface,camera,))
 
     def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface, health_monitor):
-            
         if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
-            # print('Data not ready yet')
             sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface, health_monitor))
             return
 
         try:
-            # Headers including the API key
             headers = {
                 "Content-Type": "application/json",
                 "x-api-key": self.credentials['api_key'],
                 "x-user-id": self.credentials['username']
             }
 
-            # Data payload with extended values
+            # Get active warnings
+            active_warnings = health_monitor.get_active_warnings()
+            has_warnings = len(active_warnings) > 0
+
+            # Data payload with extended values and warning status
             data = {
-                "temperature": sensorData.currentTemperature,  # example temperature value
-                "co2ppm": sensorData.currentCO2,      # example CO2 ppm value
-                "humidity": sensorData.currentHumidity,     # example humidity valuecu
-                "light_state": mqtt_interface.getLightState(),  # example state boolean
+                "temperature": sensorData.currentTemperature,  
+                "co2ppm": sensorData.currentCO2,    
+                "humidity": sensorData.currentHumidity,     
+                "light_state": mqtt_interface.getLightState(),  
                 "fridge_state": mqtt_interface.getFridgeState(),
                 "co2valve_state": mqtt_interface.getCO2State(),
                 "timestamp": datetime.utcnow().isoformat(),
-                "device_name": self.device_name,  # example device ID/name,
+                "device_name": self.device_name,
                 "heater_state": mqtt_interface.getHeaterState(),
-                "system_healthy": health_monitor.get_status()  # Add system health state
+                "system_healthy": health_monitor.get_status(),
+                "has_warnings": has_warnings  
             }
 
             # print("Sending data to PlantGeek backend:", data)
@@ -158,3 +162,44 @@ class PlantGeekBackendConnector:
             print(f"Error sending health data: {str(e)}")
         finally:
             sc.enter(60, 1, self.sendHealthErrorsToBackend, (sc, health_monitor,))
+
+    def sendWarningsToBackend(self, sc, warning_monitor):
+        # Get active warnings from the warning monitor
+        active_warnings = warning_monitor.get_active_warnings()
+        
+        if not active_warnings:
+            sc.enter(60, 1, self.sendWarningsToBackend, (sc, warning_monitor,))
+            return
+
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": self.credentials['api_key'],
+                "x-user-id": self.credentials['username']
+            }
+            
+            warning_data = {
+                "device_name": self.device_name,
+                "timestamp": datetime.utcnow().isoformat(),
+                "warnings": [
+                    {
+                        "code": warning.code.value,
+                        "message": warning.message,
+                        "timestamp": warning.timestamp.isoformat()
+                    }
+                    for warning in active_warnings
+                ]
+            }
+            
+            response = requests.post(
+                self.warning_url,  
+                headers=headers,
+                json=warning_data,
+                timeout=self.timeout
+            )
+
+            
+        except Exception as e:
+            print(f"Error sending warning data: {str(e)}")
+        finally:
+            sc.enter(60, 1, self.sendWarningsToBackend, (sc, warning_monitor,))

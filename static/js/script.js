@@ -283,14 +283,15 @@ var tempCtx = document.getElementById('temperatureChart').getContext('2d');
 var temperatureChart = new Chart(tempCtx, createChartConfig(
     'Temperature (C)', 'rgb(255, 99, 132)', 
     'Light State', 'rgb(255, 205, 86)', 
-    'Fridge State', 'rgb(54, 162, 235)'
+    'Fridge State', 'rgb(54, 162, 235)',
+    'Heater State', 'rgb(255, 99, 71)'
 ));
 var humidCtx = document.getElementById('humidityChart').getContext('2d');
 var humidityChart = new Chart(humidCtx, createChartConfig('Humidity (%)', 'rgb(54, 162, 235)'));
 var eco2Ctx = document.getElementById('eco2Chart').getContext('2d');
 var eco2Chart = new Chart(eco2Ctx, createChartConfig('eCO2 (ppm)', 'rgb(75, 192, 192)', 'rgb(255, 159, 64)', 'CO2 State', 'rgb(75, 192, 192)'));
 
-function createChartConfig(label, borderColor, lightStateLabel, lightStateColor, fridgeStateLabel, fridgeStateColor) {
+function createChartConfig(label, borderColor, lightStateLabel, lightStateColor, fridgeStateLabel, fridgeStateColor, heaterStateLabel, heaterStateColor) {
     return {
         type: 'line',
         data: {
@@ -315,6 +316,15 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
                     label: fridgeStateLabel,
                     borderColor: fridgeStateColor,
                     backgroundColor: fridgeStateColor,
+                    data: [],
+                    yAxisID: 'y1',
+                    fill: false,
+                    stepped: true
+                },
+                {
+                    label: heaterStateLabel,
+                    borderColor: heaterStateColor,
+                    backgroundColor: heaterStateColor,
                     data: [],
                     yAxisID: 'y1',
                     fill: false,
@@ -622,13 +632,14 @@ function fetchData() {
                 var light_state = data.map(d => d[3]);
                 var fridge_state = data.map(d => d[4]);
                 var co2_state = data.map(d => d[5]);
+                var heater_state = data.map(d => d[6]);
 
-                updateChart(temperatureChart, [temps, light_state, fridge_state]);
+                updateChart(temperatureChart, [temps, light_state, fridge_state, heater_state]);
                 updateChart(humidityChart, [humids]);
                 updateChart(eco2Chart, [eco2s, co2_state]);
             } else {
                 console.log("No data received, clearing charts");
-                updateChart(temperatureChart, [[], [], []]);
+                updateChart(temperatureChart, [[], [], [], []]);
                 updateChart(humidityChart, [[]]);
                 updateChart(eco2Chart, [[], []]);
             }
