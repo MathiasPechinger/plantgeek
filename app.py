@@ -488,9 +488,8 @@ def dataFetchTimeSpan():
     timeSpan = request.get_json().get('timeSpan')
     if timeSpan is None:
         return jsonify({'error': 'Missing required parameter'}), 400
-    global timeSpanDataFetching # HERE HERE HERE
+    global timeSpanDataFetching 
     timeSpanDataFetching = timeSpan
-    print("timeSpanDataFetching: ", timeSpanDataFetching)
     return jsonify({'status': 'Pump time set to {}'.format(timeSpan)})
 
 

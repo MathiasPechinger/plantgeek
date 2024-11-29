@@ -170,7 +170,6 @@ class HealthMonitor:
             sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
             return
         
-        self.systemHealthy = True
         
         # Check sensor data availability
         if sensorData.currentTemperature is None:
@@ -190,6 +189,8 @@ class HealthMonitor:
                 HealthErrorCode.TIMESTAMP_MISSING,
                 "Sensor data timestamp missing"
             )
+            sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
+            return
         else:
             self.resolve_error(HealthErrorCode.TIMESTAMP_MISSING)
         
@@ -199,6 +200,8 @@ class HealthMonitor:
                 HealthErrorCode.ZIGBEE_DEVICES_UNHEALTHY,
                 "Zigbee devices not healthy"
             )
+            sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
+            return
         elif zigbeeActivated:
             self.resolve_error(HealthErrorCode.ZIGBEE_DEVICES_UNHEALTHY)
         
@@ -210,6 +213,8 @@ class HealthMonitor:
                 HealthErrorCode.SENSOR_DATA_NOT_UPDATED,
                 "Sensor data not updated for more than 120 seconds"
             )
+            sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
+            return
         else:
             self.resolve_error(HealthErrorCode.SENSOR_DATA_NOT_UPDATED)
         
@@ -222,6 +227,8 @@ class HealthMonitor:
                     HealthErrorCode.TEMPERATURE_SENSOR_FROZEN,
                     "Temperature sensor data frozen"
                 )
+                sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
+                return
         else:
             self.temperatureFrozenCounter = 0
             self.previousTemperature = sensorData.currentTemperature
@@ -234,9 +241,14 @@ class HealthMonitor:
                 HealthErrorCode.SYSTEM_OVERHEATED,
                 f"System overheated! Temperature: {sensorData.currentTemperature}°C"
             )
+            sc.enter(1, 1, self.check_status, (sc, mqtt_interface, sensorData, zigbeeActivated,))
+            return
         elif self.systemOverheated and sensorData.currentTemperature < self.overheatTemperature - self.overheatHysteresis:
             self.systemOverheated = False
             self.resolve_error(HealthErrorCode.SYSTEM_OVERHEATED)
+
+        
+        self.systemHealthy = True
 
         # Add current measurements to control monitor
         self.control_monitor.add_measurement(
@@ -276,7 +288,11 @@ class HealthMonitor:
         return
 
     def get_status(self):
-        return self.systemHealthy
+        if self.systemHealthy and not self.systemOverheated:
+            return True
+        else:
+            return False
+
 
     # def set_status(self, status):
     #     self.status = status
