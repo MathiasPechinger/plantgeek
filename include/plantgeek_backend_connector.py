@@ -68,8 +68,16 @@ class PlantGeekBackendConnector:
 
     def sendDataToPlantGeekBackend(self, sc, sensorData, mqtt_interface, health_monitor):
         if sensorData.currentTemperature is None or sensorData.currentHumidity is None or sensorData.currentCO2 is None:
-            sc.enter(5, 1, self.sendDataToPlantGeekBackend, (sc, sensorData, mqtt_interface, health_monitor))
-            return
+            # print("Data not ready yet")
+            # set them to nan, which will be ignored by the backend
+            backendTemperature = -99.9
+            backendHumidity = -99.9
+            backendCO2 = -99.9
+        else:
+            backendTemperature = sensorData.currentTemperature 
+            backendHumidity = sensorData.currentHumidity 
+            backendCO2 = sensorData.currentCO2 
+            
 
         try:
             headers = {
@@ -80,13 +88,13 @@ class PlantGeekBackendConnector:
 
             # Get active warnings
             active_warnings = health_monitor.get_active_warnings()
-            has_warnings = len(active_warnings) > 0
+            has_warnings = len(active_warnings) > 0 
 
             # Data payload with extended values and warning status
             data = {
-                "temperature": sensorData.currentTemperature,  
-                "co2ppm": sensorData.currentCO2,    
-                "humidity": sensorData.currentHumidity,     
+                "temperature": backendTemperature,  
+                "co2ppm": backendCO2,    
+                "humidity": backendHumidity,     
                 "light_state": mqtt_interface.getLightState(),  
                 "fridge_state": mqtt_interface.getFridgeState(),
                 "co2valve_state": mqtt_interface.getCO2State(),
