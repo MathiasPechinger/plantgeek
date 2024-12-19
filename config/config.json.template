@@ -21,6 +21,9 @@
         "targetHumidity": "45",
         "hysteresis": "2"
     },
+    "FridgeControl": {
+        "controlMode": "HUMIDITY_CONTROL"
+    },
     "MQTTInterface": {
         "activateMQTTinterface": true
     },

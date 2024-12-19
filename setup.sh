@@ -128,9 +128,18 @@ npm run build
 # -------------------------------------------------------------
 CONFIG_FILE="data/configuration.yaml"
 echo "Configuring Zigbee2MQTT..."
+
+# Ask user for Zigbee adapter type
+echo "Which Zigbee adapter are you using?"
+echo "1) Sonoff ZBDongle-E (V2 model)"
+echo "2) ConBee III"
+read -p "Enter 1 or 2: " adapter_choice
+
 if [ ! -f "$CONFIG_FILE" ]; then
     mkdir -p data
-    cat <<EOL > $CONFIG_FILE
+    if [ "$adapter_choice" = "1" ]; then
+        # Configuration for Sonoff ZBDongle-E
+        cat <<EOL > $CONFIG_FILE
 homeassistant: false
 permit_join: false
 mqtt:
@@ -144,14 +153,47 @@ frontend: true
 advanced:
   channel: 13
 EOL
+    elif [ "$adapter_choice" = "2" ]; then
+        # Configuration for ConBee III
+        cat <<EOL > $CONFIG_FILE
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost:1883'
+  user: drow_mqtt
+  password: drow4mqtt
+serial:
+  adapter: deconz
+frontend: true
+advanced:
+  channel: 13
+EOL
+    else
+        echo "Invalid choice. Using default configuration for Sonoff ZBDongle-E."
+        cat <<EOL > $CONFIG_FILE
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost:1883'
+  user: drow_mqtt
+  password: drow4mqtt
+serial:
+  port: /dev/ttyUSB0
+frontend: true
+advanced:
+  channel: 13
+EOL
+    fi
     echo "Default configuration file created at $CONFIG_FILE."
 else
-    echo "Configuration file already exists. deleting and creating a new one."
-
+    echo "Configuration file already exists. Deleting and creating a new one."
     rm $CONFIG_FILE
 
-    mkdir -p data
-    cat <<EOL > $CONFIG_FILE
+    if [ "$adapter_choice" = "1" ]; then
+        # Configuration for Sonoff ZBDongle-E
+        cat <<EOL > $CONFIG_FILE
 homeassistant: false
 permit_join: false
 mqtt:
@@ -165,6 +207,41 @@ frontend: true
 advanced:
   channel: 13
 EOL
+    elif [ "$adapter_choice" = "2" ]; then
+        # Configuration for ConBee III
+        cat <<EOL > $CONFIG_FILE
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost:1883'
+  user: drow_mqtt
+  password: drow4mqtt
+serial:
+  port: /dev/ttyUSB0
+  adapter: deconz
+  baudrate: 115200
+frontend: true
+advanced:
+  channel: 13
+EOL
+    else
+        echo "Invalid choice. Using default configuration for Sonoff ZBDongle-E."
+        cat <<EOL > $CONFIG_FILE
+homeassistant: false
+permit_join: false
+mqtt:
+  base_topic: zigbee2mqtt
+  server: 'mqtt://localhost:1883'
+  user: drow_mqtt
+  password: drow4mqtt
+serial:
+  port: /dev/ttyUSB0
+frontend: true
+advanced:
+  channel: 13
+EOL
+    fi
     echo "Default configuration file created at $CONFIG_FILE."
 fi
 
@@ -205,15 +282,6 @@ sudo chmod 644 $SERVICE_FILE
 
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload
-
-# Enable the service to start on boot
-sudo systemctl enable drowbox_mqtt_interface
-
-# Start the service immediately
-sudo systemctl start drowbox_mqtt_interface
-
-# Verify the service status
-sudo systemctl status drowbox_mqtt_interface
 
 
 
@@ -259,11 +327,22 @@ sudo chmod 644 $SERVICE_FILE
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload
 
+
+# ======================================
+# --------------------------------------
+# --- Enable services ------------------
+# --------------------------------------
+# ======================================
+
+# Enable the service to start on boot
+sudo systemctl enable drowbox_mqtt_interface
+
+# Start the service immediately
+sudo systemctl start drowbox_mqtt_interface
+
 # Enable the service to start on boot
 sudo systemctl enable drowbox_webapp
 
 # Start the service immediately
 sudo systemctl start drowbox_webapp
 
-# Verify the service status
-sudo systemctl status drowbox_webapp

@@ -73,8 +73,17 @@ class Fridge:
         if self.controlMode == ControlMode.TEMPERATURE_CONTROL:
             temp = self.get_current_temp()
                     
-            self.sensorChecks(temp, sc, mqtt_interface)           
-            self.temperature_control(sc, temp, mqtt_interface)
+            self.sensorChecks(temp, sc, mqtt_interface)      
+            
+            if temp > self.controlTemperatureFallbackMaxLevel:
+                # if the temperature is above the fallback temperature we switch on the fridge   
+                self.switch_on(mqtt_interface)
+            elif temp < self.controlTemperatureFallbackMinLevel:
+                # prevent freezing the plants
+                self.switch_off(mqtt_interface)
+            else:
+                # regular operation
+                self.temperature_control(sc, temp, mqtt_interface)
                 
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
         
@@ -86,15 +95,12 @@ class Fridge:
             
             if temp > self.controlTemperatureFallbackMaxLevel:
                 # if the temperature is above the fallback temperature we switch on the fridge   
-                # print("Switching on because of fallback temperature")
                 self.switch_on(mqtt_interface)
             elif temp < self.controlTemperatureFallbackMinLevel:
                 # prevent freezing the plants
-                # print("Switching off because of fallback temperature")
                 self.switch_off(mqtt_interface)
             else:
                 # regular operation
-                # print("Regular operation")
                 self.humidity_control(sc, humidity, mqtt_interface)
                         
             sc.enter(5, 1, self.control_fridge, (sc,mqtt_interface,))
@@ -150,7 +156,7 @@ class Fridge:
         else:
             self.controlTemperature = self.controlTemperatureNight
             
-        print(f"Control temperature: {self.controlTemperature}")
+        # print(f"Control temperature: {self.controlTemperature}")
         
         if mqtt_interface.getFridgeState() == False:
             if temp > self.controlTemperature:
