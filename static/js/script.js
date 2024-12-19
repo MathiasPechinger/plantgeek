@@ -1,4 +1,106 @@
-let intervals = {};  // Object to store interval references
+let activeIntervals = {};
+
+function initializeTab(tabId) {
+    stopAllIntervals();
+    
+    switch(tabId) {
+        case 'stream':
+            startStreamInterval();
+            break;
+        case 'zigbee':
+            startZigbeeInterval();
+            break;
+        case 'environment':
+            startEnvironmentInterval();
+            break;
+    }
+}
+
+function stopAllIntervals() {
+    Object.values(activeIntervals).forEach(intervals => {
+        intervals.forEach(interval => clearInterval(interval));
+    });
+    activeIntervals = {};
+}
+
+function startStreamInterval() {
+    activeIntervals.stream = [];
+    refreshImage();
+    activeIntervals.stream.push(setInterval(refreshImage, 1000));
+}
+
+function startZigbeeInterval() {
+    activeIntervals.zigbee = [];
+    getZigbeeDevices();
+    activeIntervals.zigbee.push(setInterval(getZigbeeDevices, 3000));
+}
+
+function startEnvironmentInterval() {
+    activeIntervals.environment = [];
+    const functions = [fetchData, fetchDataNow, fetchCPUTemperature, updateTemperatureDisplay];
+    
+    functions.forEach(func => {
+        func();
+        activeIntervals.environment.push(setInterval(func, 3000));
+    });
+}
+
+// Initialize tab handling
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            const targetId = event.target.href.split('#')[1];
+            initializeTab(targetId);
+            
+            // Special handling for config tab
+            if (targetId === 'config') {
+                fetchConfig();
+            }
+        });
+    });
+
+    // Initialize the first active tab
+    initializeTab('stream');
+});
+
+function fetchConfig() {
+    fetch('/config')
+        .then(response => response.json())
+        .then(data => {
+            populateConfigForm(data);
+        })
+        .catch(error => console.error('Error fetching config:', error));
+}
+
+function populateConfigForm(config) {
+    // API Configuration
+    document.getElementById('api_key').value = config.APIConfig.apiKey || '';
+    document.getElementById('username').value = config.APIConfig.username || '';
+    document.getElementById('device_name').value = config.PlanGeekBackend.deviceName || '';
+
+    // Light Control
+    document.getElementById('light_switch_on_time').value = config.LightControl.switchOnTime || '';
+    document.getElementById('light_switch_off_time').value = config.LightControl.switchOffTime || '';
+
+    // CO2 Control
+    document.getElementById('co2_target_value').value = config.CO2Control.targetValue || '';
+    document.getElementById('co2_hysteresis').value = config.CO2Control.hysteresis || '';
+
+    // Temperature Control
+    document.getElementById('target_temperature_day').value = config.TemperatureControl.targetDayTemperature || '';
+    document.getElementById('target_temperature_night').value = config.TemperatureControl.targetNightTemperature || '';
+    document.getElementById('temperature_hysteresis').value = config.TemperatureControl.hysteresis || '';
+
+    // Humidity Control
+    document.getElementById('target_humidity').value = config.HumidityControl.targetHumidity || '';
+    document.getElementById('humidity_hysteresis').value = config.HumidityControl.hysteresis || '';
+
+    // Fridge Control Mode
+    if (config.FridgeControl && config.FridgeControl.controlMode) {
+        document.getElementById('fridge_control_mode').value = config.FridgeControl.controlMode;
+    }
+}
 
 function updateTemperatureDisplay() {
     const cpuTemperature = document.getElementById('cpu_temperature');
@@ -758,3 +860,66 @@ function saveDeviceName() {
         alert('Error saving device name');
     });
 }
+
+// Add this function to show notifications
+function showNotification(message, isSuccess) {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.className = `alert ${isSuccess ? 'alert-success' : 'alert-danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    notificationDiv.role = 'alert';
+    notificationDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.appendChild(notificationDiv);
+
+    // Remove the notification after 5 seconds
+    setTimeout(() => {
+        notificationDiv.remove();
+    }, 5000);
+}
+
+// Update the form submission handler
+document.getElementById('configForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+    const formData = new FormData(event.target);
+    const jsonData = {};
+
+    formData.forEach((value, key) => {
+        jsonData[key] = value;
+    });
+
+    fetch('/save_config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        showNotification('Configuration saved successfully!', true);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification(`Failed to save configuration: ${error.message}`, false);
+    })
+    .finally(() => {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+    });
+});
