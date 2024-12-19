@@ -364,6 +364,13 @@
                         <label for="device_name">Device Name:</label>
                         <input type="text" class="form-control" id="device_name" name="device_name" required>
                     </div>
+                    <div class="form-group">
+                        <label for="fridge_control_mode">Fridge Control Mode</label>
+                        <select class="form-control" id="fridge_control_mode" name="fridge_control_mode" required>
+                            <option value="TEMPERATURE_CONTROL">Temperature Control</option>
+                            <option value="HUMIDITY_CONTROL">Humidity Control</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Save Configuration</button>
                 </form>
             </div>
@@ -398,6 +405,7 @@
             document.getElementById('target_humidity').value = config.HumidityControl.targetHumidity;
             document.getElementById('humidity_hysteresis').value = config.HumidityControl.hysteresis;
             document.getElementById('device_name').value = config.PlanGeekBackend.deviceName;
+            document.getElementById('fridge_control_mode').value = config.FridgeControl.controlMode;
         }
 
         function fetchConfig() {
@@ -426,13 +434,23 @@
                 },
                 body: JSON.stringify(jsonData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    // If response is not ok, throw an error with the status
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                if (data.error) {
+                    // If the server returned an error message
+                    throw new Error(data.error);
+                }
                 alert(data.message || 'Configuration saved successfully!');
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Failed to save configuration.');
+                alert(`Failed to save configuration: ${error.message}`);
             });
         });
 

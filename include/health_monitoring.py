@@ -98,7 +98,17 @@ class HealthMonitor:
         self.error_history: List[HealthError] = []
         self.warnings = []
         self.control_monitor = ControlAccuracyMonitor(config)
+        self.debug = False  # Add debug flag
         
+    def set_debug(self, debug_state: bool):
+        """Enable or disable debug printing"""
+        self.debug = debug_state
+        
+    def debug_print(self, message: str):
+        """Print debug messages if debug is enabled"""
+        if self.debug:
+            print(f"[HealthMonitor Debug] {message}")
+
     def add_error(self, code: HealthErrorCode, message: str) -> None:
         # Check if error with same code already exists in active errors
         for existing_error in self.active_errors:
@@ -113,6 +123,7 @@ class HealthMonitor:
         )
         self.active_errors.append(error)
         self.error_history.append(error)
+        self.debug_print(f"New error added: {code.name} - {message}")
         
     def resolve_error(self, code: HealthErrorCode) -> None:
         for error in self.active_errors:
@@ -120,7 +131,8 @@ class HealthMonitor:
                 error.resolved = True
                 error.resolved_timestamp = datetime.now()
                 self.active_errors.remove(error)
-                
+                self.debug_print(f"Error resolved: {code.name}")
+
     def get_active_errors(self) -> List[HealthError]:
         return self.active_errors
     
@@ -139,6 +151,7 @@ class HealthMonitor:
             # Update existing warning with new message and timestamp
             existing_warning.message = message
             existing_warning.timestamp = datetime.now()
+            self.debug_print(f"Warning updated: {code.name} - {message}")
             return existing_warning
         else:
             # Create new warning if none exists
@@ -148,6 +161,7 @@ class HealthMonitor:
                 timestamp=datetime.now()
             )
             self.warnings.append(warning)
+            self.debug_print(f"New warning added: {code.name} - {message}")
             return warning
         return existing_warning
 
@@ -156,6 +170,7 @@ class HealthMonitor:
             if warning.code == code and not warning.resolved:
                 warning.resolved = True
                 warning.resolved_timestamp = datetime.now()
+                self.debug_print(f"Warning resolved: {code.name}")
 
     def get_active_warnings(self):
         return [w for w in self.warnings if not w.resolved]

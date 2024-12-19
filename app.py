@@ -12,7 +12,7 @@ import subprocess
 import json
 from functools import wraps
 from include.data_writer_mysql import SensorDataLogger
-from include.fridge_controller import Fridge
+from include.fridge_controller import Fridge, ControlMode
 from include.heater_controller import Heater
 from include.light_controller import Light
 from include.co2_controller import CO2
@@ -135,34 +135,37 @@ def initConfigOnStartup():
     
     fridge.set_control_humidity(config['HumidityControl']['targetHumidity'])
     fridge.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+    if 'FridgeControl' in config and 'controlMode' in config['FridgeControl']:
+        fridge.set_control_mode(ControlMode[config['FridgeControl']['controlMode']])
     
     heater.set_control_temperature(config['TemperatureControl']['targetDayTemperature'])
     heater.set_hysteresis(config['TemperatureControl']['hysteresis'])
-
+    
 @app.route('/save_config', methods=['POST'])
 def save_config():
     data = request.get_json()
-    
     config = load_config()
-    
+    if 'fridge_control_mode' in data:
+        if 'FridgeControl' not in config:
+            config['FridgeControl'] = {}
+        config['FridgeControl']['controlMode'] = data['fridge_control_mode']
+        fridge.set_control_mode(ControlMode[data['fridge_control_mode']])
     # Update the configuration with provided data
     if 'device_name' in data:
         config['PlanGeekBackend']['deviceName'] = data['device_name']
-        plantGeekBackend.updateDeviceName(data['device_name'])
-    
+        if config['PlanGeekBackend']['plantGeekBackendInUse']:
+            plantGeekBackend.updateDeviceName(data['device_name'])
     if 'api_key' in data:
         config['APIConfig']['apiKey'] = data['api_key']
-        
     if 'username' in data:
         config['APIConfig']['username'] = data['username']
     
     if 'api_key' in data and 'username' in data:
-        plantGeekBackend.updateCredentials(config['APIConfig']['username'], config['APIConfig']['apiKey'])
-    
+        if config['PlanGeekBackend']['plantGeekBackendInUse']:
+            plantGeekBackend.updateCredentials(config['APIConfig']['username'], config['APIConfig']['apiKey'])
     if 'co2_target_value' in data:
         config['CO2Control']['targetValue'] = data['co2_target_value']
         co2.set_co2_target_value(data['co2_target_value'])
-    
     if 'co2_hysteresis' in data:
         config['CO2Control']['hysteresis'] = data['co2_hysteresis']
         co2.set_co2_hysteresis(data['co2_hysteresis'])
@@ -630,6 +633,7 @@ if __name__ == '__main__':
        
     camera = CameraRecorder()
     systemHealth = HealthMonitor(config)
+    systemHealth.set_debug(False)  # Enable debug printing
     
     if plantGeekBackendInUse:
         plantGeekBackend = PlantGeekBackendConnector()
