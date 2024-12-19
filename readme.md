@@ -186,3 +186,8 @@ camera_auto_detect=0
 dtoverlay=ov5647
 
 Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/8MP-IMX219/)
+
+### Known Issues
+
+- The fridge controller has a bug where it does not switch on if the humidity is too high.
+
