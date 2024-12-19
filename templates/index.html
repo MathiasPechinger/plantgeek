@@ -3,462 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sensor Data</title>
+    <title>GrowBox Control Panel</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <style>
-        body { padding: 20px; }
-        .dashboard { margin-top: 20px; }
-        .card { margin-bottom: 20px; }
-        .card-header { 
-            background-color:#4CAF50; 
-            color: white; 
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        
-        .card-body { background-color: #f8f9fa; }
-        .controls { margin-bottom: 20px; }
-        
-        .responsive-iframe-container {
-            position: relative;
-            overflow: hidden;
-            padding-top: 90%;
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #1E3A5F;
+            --background-color: #f8f9fa;
         }
 
-        .responsive-iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
+        body { 
+            padding: 0;
+            background-color: var(--background-color);
         }
 
         .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
         .header-image img {
-            width: 40%;
+            max-width: 200px;
             height: auto;
         }
-        .header-text h1 {
-            margin-bottom: 4px;
-            text-align: center;
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: 2rem;
         }
 
-        .rotate-container {
-            transform: rotate(180deg);
+        .nav-tabs .nav-link {
+            color: var(--secondary-color);
+            border: none;
+            padding: 1rem 2rem;
+            font-weight: 500;
         }
 
-        .placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 10px;
+        .nav-tabs .nav-link.active {
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
         }
 
-        .placeholder-circle {
-            width: 20px;
-            height: 20px;
-            border: 4px solid #28a745;
-            border-top: 4px solid #f8f9fa;
-            border-radius: 50%;
-            animation: spin 2s linear infinite;
-            display: none;
+        .tab-content {
+            padding: 2rem;
         }
-       
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
         }
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
+
+        .card-header {
             background-color: white;
-            transition: .4s;
+            border-bottom: 2px solid var(--primary-color);
+            padding: 1rem;
+            font-weight: 500;
         }
-        input:checked + .slider {
-            background-color: #1E3A5F;
+
+        .card-body {
+            padding: 1.5rem;
         }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        /* Rounded sliders */
-        .slider.round {
-            border-radius: 34px;
-        }
-        .slider.round:before {
-            border-radius: 50%;
-        }
-        .btn-warning {
-            background-color: #FFB74D; /* Change this to your desired color */
-            border-color: black; /* Change this to match the background color */
-            color: #fff; /* Optional: Change the text color */
-        }
-        .btn-success {
-            background-color: #1E3A5F; /* Change this to your desired color */
-            border-color: black; /* Change this to match the background color */
-            color: #fff; /* Optional: Change the text color */
-        }
-        .btn-danger {
-            background-color: #dc3545; /* Change this to your desired color */
-            border-color: black;; /* Change this to match the background color */
-            color: #fff; /* Optional: Change the text color */
-        }
+
         .btn-primary {
-            background-color: #1E3A5F; /* Change this to your desired color */
-            border-color: black; /* Change this to match the background color */
-            color: #fff; /* Optional: Change the text color */
+            background-color: var(--secondary-color);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-color);
+        }
+
+        #webcamImage {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .alert {
+            z-index: 1050;
+            max-width: 400px;
+        }
+
+        .position-fixed {
+            position: fixed !important;
+        }
+
+        .top-0 {
+            top: 0 !important;
+        }
+
+        .end-0 {
+            right: 0 !important;
+        }
+
+        .m-3 {
+            margin: 1rem !important;
         }
     </style>
 </head>
 <body>
-    
-    <div class="header-container">
-        <div class="header-image" style="text-align: center;">
-            <img src="static/images/logoPlantGeek.PNG" alt="Header Image">
-        </div>
-    </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            Live Stream
-            <label class="switch">
-                <input type="checkbox" id="toggle_image_stream" onchange="sendToggleStatus('toggle_image_stream', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_image_stream else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-
-        <div id="content_div_image_stream" style="display: {{'block' if display_settings.toggle_toggle_image_stream else 'none'}};">
-            <img id="webcamImage" src="static/cameraImages/latest/lastFrame.jpg" alt="Image" style="width: 100%; height: auto;">
+    <div class="header-container text-center">
+        <div class="header-image">
+            <img src="static/images/logoPlantGeek.PNG" alt="PlantGeek Logo">
         </div>
     </div>
 
-    <!-- <div class="card">
-        <div class="card-header">
-            Fan Control
-            <label class="switch">
-                <input type="checkbox" id="toggle_fan_control" onchange="sendToggleStatus('toggle_fan_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_fan_control else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_fan_control" style="display: {{'block' if display_settings.toggle_toggle_fan_control else 'none'}};">
-            <div class="card-body">
-                <h5>Fan Speed</h5>
-                <input type="range" id="fan-speed" min="0" max="100" value="50" class="form-range" onchange="setFanSpeed(this.value)">
-                <p>Current Fan Speed: <span id="current-fan-speed">50</span>%</p>
+    <div class="container-fluid mt-4">
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="stream-tab" data-bs-toggle="tab" href="#stream" role="tab">Live Stream</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="zigbee-tab" data-bs-toggle="tab" href="#zigbee" role="tab">Zigbee Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="environment-tab" data-bs-toggle="tab" href="#environment" role="tab">Environment</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="config-tab" data-bs-toggle="tab" href="#config" role="tab">Configuration</a>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabContent">
+            <!-- Live Stream Tab -->
+            <div class="tab-pane fade show active" id="stream" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">Live Camera Feed</div>
+                    <div class="card-body">
+                        <img id="webcamImage" src="static/cameraImages/latest/lastFrame.jpg" alt="Live Stream">
+                    </div>
+                </div>
             </div>
-        </div>
-    </div> -->
 
-    <!-- <div class="card">
-        <div class="card-header">
-            API Key
-            <label class="switch">
-                <input type="checkbox" id="toggle_api_key" onchange="sendToggleStatus('toggle_api_key', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_api_key else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_api_key" style="display: {{'block' if display_settings.toggle_toggle_api_key else 'none'}};">
-            <div class="card-body">
-                <h5>Enter your API Key</h5>
-                <input type="text" id="api-key-input" class="form-control" placeholder="Enter your API Key">
-                <button onclick="saveApiKey()" class="btn btn-primary">Save API Key</button>
+            <!-- Zigbee Dashboard Tab -->
+            <div class="tab-pane fade" id="zigbee" role="tabpanel">
+                <!-- Copy existing Zigbee dashboard content -->
+                <div class="card">
+                    <div class="card-header">Zigbee Devices</div>
+                    <div class="card-body">
+                        <button onclick="zigbeePairing(true)" class="btn btn-success">Enable Pairing</button>
+                        <button onclick="zigbeePairing(false)" class="btn btn-warning">Disable Pairing</button>
+                        <div class="mt-3">
+                            <ul id="dynamic-list" class="list-group"></ul>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div> -->
 
-    <!-- <div class="card">
-        <div class="card-header">
-            Fridge State
-            <label class="switch">
-                <input type="checkbox" id="toggle_fridge_state" onchange="sendToggleStatus('toggle_fridge_state', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_fridge_state else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_fridge_state" style="display: {{'block' if display_settings.toggle_fridge_state else 'none'}};">
-            <div class="card-body">
-                <h5>Current State: <span id="fridge-state"></span></h5>
-                <div class="progress">
-                    <div id="fridge-progress" class="progress-bar bg-success" role="progressbar" style="width: 20%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            <!-- Environment Tab -->
+            <div class="tab-pane fade" id="environment" role="tabpanel">
+                <!-- Copy existing Temperature & Environment content -->
+                <div class="card">
+                    <div class="card-header">System Temperature</div>
+                    <div class="card-body">
+                        <p>CPU Temperature: <span id="cpu_temperature"></span></p>
+                        <p>RP1 ADC Temperature: <span id="rp1_adc_temperature"></span></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Environmental Metrics</div>
+                    <div class="card-body">
+                        <div class="btn-group mb-4">
+                            <button onclick="setTimeSpanDataBaseRetrieval(24)" class="btn btn-primary">24h</button>
+                            <button onclick="setTimeSpanDataBaseRetrieval(12)" class="btn btn-primary">12h</button>
+                            <button onclick="setTimeSpanDataBaseRetrieval(4)" class="btn btn-primary">4h</button>
+                            <button onclick="setTimeSpanDataBaseRetrieval(1)" class="btn btn-primary">1h</button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Temperature (C)</h5>
+                            <p>Current: <span id="actual-temperature"></span></p>
+                            <canvas id="temperatureChart"></canvas>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Humidity (%)</h5>
+                            <p>Current: <span id="actual-humidity"></span></p>
+                            <canvas id="humidityChart"></canvas>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>CO2 (ppm)</h5>
+                            <p>Current: <span id="actual-eco2"></span></p>
+                            <canvas id="eco2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Tab -->
+            <div class="tab-pane fade" id="config" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">System Configuration</div>
+                    <div class="card-body">
+                        <form id="configForm" class="row g-3">
+                            <!-- API Configuration -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">API Configuration</h5>
+                                <div class="mb-3">
+                                    <label for="api_key" class="form-label">API Key</label>
+                                    <input type="text" class="form-control" id="api_key" name="api_key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">User ID</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="device_name" class="form-label">Device Name</label>
+                                    <input type="text" class="form-control" id="device_name" name="device_name" required>
+                                </div>
+                            </div>
+
+                            <!-- Light Control -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Light Control</h5>
+                                <div class="mb-3">
+                                    <label for="light_switch_on_time" class="form-label">Light Switch On Time</label>
+                                    <input type="time" class="form-control" id="light_switch_on_time" name="light_switch_on_time" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="light_switch_off_time" class="form-label">Light Switch Off Time</label>
+                                    <input type="time" class="form-control" id="light_switch_off_time" name="light_switch_off_time" required>
+                                </div>
+                            </div>
+
+                            <!-- Temperature Control -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Temperature Control</h5>
+                                <div class="mb-3">
+                                    <label for="target_temperature_day" class="form-label">Target Temperature Day (°C)</label>
+                                    <input type="number" step="0.1" class="form-control" id="target_temperature_day" name="target_temperature_day" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="target_temperature_night" class="form-label">Target Temperature Night (°C)</label>
+                                    <input type="number" step="0.1" class="form-control" id="target_temperature_night" name="target_temperature_night" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="temperature_hysteresis" class="form-label">Temperature Hysteresis</label>
+                                    <input type="number" step="0.1" class="form-control" id="temperature_hysteresis" name="temperature_hysteresis" required>
+                                </div>
+                            </div>
+
+                            <!-- Humidity Control -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Humidity Control</h5>
+                                <div class="mb-3">
+                                    <label for="target_humidity" class="form-label">Target Humidity (%)</label>
+                                    <input type="number" step="1" class="form-control" id="target_humidity" name="target_humidity" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="humidity_hysteresis" class="form-label">Humidity Hysteresis</label>
+                                    <input type="number" step="0.1" class="form-control" id="humidity_hysteresis" name="humidity_hysteresis" required>
+                                </div>
+                            </div>
+
+                            <!-- CO2 Control -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">CO2 Control</h5>
+                                <div class="mb-3">
+                                    <label for="co2_target_value" class="form-label">CO2 Target Value (ppm)</label>
+                                    <input type="number" step="1" class="form-control" id="co2_target_value" name="co2_target_value" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="co2_hysteresis" class="form-label">CO2 Hysteresis</label>
+                                    <input type="number" step="1" class="form-control" id="co2_hysteresis" name="co2_hysteresis" required>
+                                </div>
+                            </div>
+
+                            <!-- Fridge Control -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Fridge Control</h5>
+                                <div class="mb-3">
+                                    <label for="fridge_control_mode" class="form-label">Control Mode</label>
+                                    <select class="form-control" id="fridge_control_mode" name="fridge_control_mode" required>
+                                        <option value="TEMPERATURE_CONTROL">Temperature Control</option>
+                                        <option value="HUMIDITY_CONTROL">Humidity Control</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div> -->
-
-    <!-- <div class="card">
-        <div class="card-header">
-            Light Control Dashboard
-            <label class="switch">
-                <input type="checkbox" id="toggle_light_control" onchange="sendToggleStatus('toggle_light_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_light_control else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_light_control" style="display: {{'block' if display_settings.toggle_light_control else 'none'}};">
-            <div class="card-body">
-                Current time: <span id="current-time"></span><br>
-                Time until light turns on again: <span id="time-until-on"></span><br>
-                Set Light On Time: <input type="time" id="light-on-time" class="form-control" style="width: auto; display: inline-block;">
-                Set Light Off Time: <input type="time" id="light-off-time" class="form-control" style="width: auto; display: inline-block;">
-                <button onclick="setLightTimes()" class="btn btn-info">Save Times</button><br>
-            </div>
-        </div>
-    </div> -->
-
-    <!-- <div class="card">
-        <div class="card-header">
-            CO2 Control Dashboard
-            <label class="switch">
-                <input type="checkbox" id="toggle_co2_control" onchange="sendToggleStatus('toggle_co2_control', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_co2_control else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_co2_control" style="display: {{'block' if display_settings.toggle_co2_control else 'none'}};">
-            <div class="card-body">
-                <p>CO2 Control is static and set up to be activated at 800ppm and shut down at 850ppm</p>
-            </div>
-        </div>
-    </div> -->
-
-    <div class="card">
-        <div class="card-header">
-            Zigbee Dashboard
-            <label class="switch">
-                <input type="checkbox" id="toggle_zigbee_dashboard" onchange="sendToggleStatus('toggle_zigbee_dashboard', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_zigbee_dashboard else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_zigbee_dashboard" style="display: {{'block' if display_settings.toggle_zigbee_dashboard else 'none'}};">
-            <div class="card-body">
-                <button onclick="zigbeePairing(true)" class="btn btn-success">Enable</button>
-                <button onclick="zigbeePairing(false)" class="btn btn-warning">Disable</button>
-                <div class="placeholder">
-                    <span id="pairing-text"></span>
-                    <div id="pairing-circle" class="placeholder-circle"></div>
-
-                </div>
-                <div>
-                    <!-- Device 1: <span id="zigbee_device1"></span><br> -->
-                    <ul id="dynamic-list" class="list-group"></ul>
-                    <p>Use the manual control function to identify which is the corresponding power socket. It will temperarily disable the scheduled system.</p>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            Temperature & Environment
-            <label class="switch">
-                <input type="checkbox" id="toggle_environment_graph" onchange="sendToggleStatus('toggle_environment_graph', this.checked ? 1 : 0)" {{ 'checked' if display_settings.toggle_environment_graph else '' }}>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_environment_graph" style="display: {{'block' if display_settings.toggle_environment_graph else 'none'}};">
-            <div class="card-body">
-                CPU Temperature: <span id="cpu_temperature"></span><br>
-                RP1 ADC Temperature: <span id="rp1_adc_temperature"></span><br>
-                <button onclick="setTimeSpanDataBaseRetrieval(24)" class="btn btn-primary">24h</button>
-                <button onclick="setTimeSpanDataBaseRetrieval(12)" class="btn btn-primary">12h</button>
-                <button onclick="setTimeSpanDataBaseRetrieval(4)" class="btn btn-primary">4h</button>
-                <button onclick="setTimeSpanDataBaseRetrieval(1)" class="btn btn-primary">1h</button>
-                <h5>Temperature (C)</h5>
-                <p>Current Temperature: <span id="actual-temperature"></span></p>
-                <canvas id="temperatureChart" width="400" height="auto"></canvas><br>
-                <h5>Humidity (%)</h5>
-                <p>Current Humidity: <span id="actual-humidity"></span></p>
-                <canvas id="humidityChart" width="400" height="auto"></canvas><br>
-                <h5>CO2 (ppm)</h5>
-                <p>Current CO2: <span id="actual-eco2"></span></p>
-                <canvas id="eco2Chart" width="400" height="auto"></canvas><br>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            Configuration Settings
-            <label class="switch">
-                <input type="checkbox" id="toggle_configuration_settings" onchange="toggleConfigSettings()">
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div id="content_div_configuration_settings" style="display: none;">
-            <div class="card-body">
-                <form id="configForm">
-                    <div class="form-group">
-                        <label for="api_key">API Key</label>
-                        <input type="text" class="form-control" id="api_key" name="api_key" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="username">User ID</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="light_switch_on_time">Light Switch On Time</label>
-                        <input type="time" class="form-control" id="light_switch_on_time" name="light_switch_on_time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="light_switch_off_time">Light Switch Off Time</label>
-                        <input type="time" class="form-control" id="light_switch_off_time" name="light_switch_off_time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="co2_target_value">CO2 Target Value</label>
-                        <input type="text" class="form-control" id="co2_target_value" name="co2_target_value" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="co2_hysteresis">CO2 Hysteresis</label>
-                        <input type="text" class="form-control" id="co2_hysteresis" name="co2_hysteresis" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="target_temperature_day">Target Temperature Day</label>
-                        <input type="text" class="form-control" id="target_temperature_day" name="target_temperature_day" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="target_temperature_night">Target Temperature Night</label>
-                        <input type="text" class="form-control" id="target_temperature_night" name="target_temperature_night" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="temperature_hysteresis">Temperature Hysteresis</label>
-                        <input type="text" class="form-control" id="temperature_hysteresis" name="temperature_hysteresis" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="target_humidity">Target Humidity</label>
-                        <input type="text" class="form-control" id="target_humidity" name="target_humidity" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="humidity_hysteresis">Humidity Hysteresis</label>
-                        <input type="text" class="form-control" id="humidity_hysteresis" name="humidity_hysteresis" pattern="^\d+(\.\d+)?$" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="device_name">Device Name:</label>
-                        <input type="text" class="form-control" id="device_name" name="device_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="fridge_control_mode">Fridge Control Mode</label>
-                        <select class="form-control" id="fridge_control_mode" name="fridge_control_mode" required>
-                            <option value="TEMPERATURE_CONTROL">Temperature Control</option>
-                            <option value="HUMIDITY_CONTROL">Humidity Control</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Save Configuration</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <button onclick="rebootSystem()" class="btn btn-warning">Reboot System</button>
-
-    <script>
-        function saveApiKey() {
-            var apiKey = document.getElementById("api-key-input").value;
-            // TODO: Implement code to save the API key
-            console.log("API Key saved: " + apiKey);
-        }
-
-        function toggleConfigSettings() {
-            const isChecked = document.getElementById('toggle_configuration_settings').checked;
-            const contentDiv = document.getElementById('content_div_configuration_settings');
-            contentDiv.style.display = isChecked ? 'block' : 'none';
-        }
-
-        function populateConfigForm(config) {
-            document.getElementById('api_key').value = config.APIConfig.apiKey;
-            document.getElementById('username').value = config.APIConfig.username;
-            document.getElementById('co2_target_value').value = config.CO2Control.targetValue;
-            document.getElementById('co2_hysteresis').value = config.CO2Control.hysteresis;
-            document.getElementById('light_switch_on_time').value = config.LightControl.switchOnTime;
-            document.getElementById('light_switch_off_time').value = config.LightControl.switchOffTime;
-            document.getElementById('target_temperature_day').value = config.TemperatureControl.targetDayTemperature;
-            document.getElementById('target_temperature_night').value = config.TemperatureControl.targetNightTemperature;
-            document.getElementById('temperature_hysteresis').value = config.TemperatureControl.hysteresis;
-            document.getElementById('target_humidity').value = config.HumidityControl.targetHumidity;
-            document.getElementById('humidity_hysteresis').value = config.HumidityControl.hysteresis;
-            document.getElementById('device_name').value = config.PlanGeekBackend.deviceName;
-            document.getElementById('fridge_control_mode').value = config.FridgeControl.controlMode;
-        }
-
-        function fetchConfig() {
-            fetch('/config')
-                .then(response => response.json())
-                .then(data => {
-                    populateConfigForm(data);
-                })
-                .catch(error => console.error('Error fetching config:', error));
-        }
-
-        document.getElementById('configForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const formData = new FormData(event.target);
-            const jsonData = {};
-
-            formData.forEach((value, key) => {
-                jsonData[key] = value;
-            });
-
-            fetch('/save_config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(jsonData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    // If response is not ok, throw an error with the status
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    // If the server returned an error message
-                    throw new Error(data.error);
-                }
-                alert(data.message || 'Configuration saved successfully!');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert(`Failed to save configuration: ${error.message}`);
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchConfig();
-        });
-    </script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/script.js"></script>
 </body>
 </html>
