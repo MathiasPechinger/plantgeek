@@ -192,3 +192,29 @@ Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Nat
 - The fridge controller has a bug where it does not switch on if the humidity is too high.
 - An empty CO2 reservoir is not detected automatically and will not create and alarm.
 
+
+## Failure Mode and Effects Analysis (FMEA)
+
+Key Definitions:
+- **Severity (1-10)**: Impact of the failure on system operation and safety
+- **Likelihood (1-10)**: Probability of the failure occurring
+- **Detection (1-10)**: Ability to detect the failure before it impacts the system
+- **Risk Priority Number (RPN)**: Calculated as Severity × Likelihood × Detection
+
+| Component | Failure Mode | Effect on System | Severity (1-10) | Likelihood (1-10) | Detection (1-10) | Risk Priority Number (RPN) | Mitigation / Action Plan |
+|-----------|--------------|------------------|-----------------|------------------|-----------------|--------------------------|------------------------|
+| Raspberry Pi | Power failure (loss of power) | System stops functioning, no control over devices | 10 | 4 | 9 | 360 | A timeout is included in the message to the zigbee sockets. If not mesasge is received for 60 seconds, the sockets shut down themselves. |
+| Zigbee Socket (Fridge) | Loss of communication with Raspberry Pi | Fridge does not respond to control signals, possibly causing temperature rise | 9 | 5 | 7 | 315 | Implement a timeout in Zigbee sockets; ensure all sockets shut down if communication loss persists. |
+| Zigbee Socket (CO2) | Loss of communication with Raspberry Pi | CO2 generation stops, affecting air quality, potentially damaging plant growth | 9 | 5 | 7 | 315 | Implement a timeout in Zigbee sockets; ensure all sockets shut down if communication loss persists. |
+| Zigbee Socket (Light) | Loss of communication with Raspberry Pi | Light does not respond, affecting plant growth. Control over light may be lost if no data update occurs, causing overheating. | 8 | 5 | 7 | 280 | Implement a timeout in Zigbee sockets; ensure all sockets shut down if communication loss persists; additional temperature triggered relay, to cut the power in case of high temperature. |
+| Zigbee Socket (Heater) | Loss of communication with Raspberry Pi | Heater fails to respond, risking inadequate heating or overheating | 9 | 5 | 7 | 315 | Implement a timeout in Zigbee sockets; ensure all sockets shut down if communication loss persists; additional temperature triggered relay, to cut the power in case of high temperature. |
+| SCD40 CO2 | Sensor failure (e.g., inaccurate readings, disconnected sensor) | Incorrect CO2 readings affect air quality control, potentially harming plants | 9 | 3 | 8 | 216 | Implement sensor health monitoring, fallback strategies, and sensor replacement. Trigger "SENSOR_DATA_NOT_UPDATED" error if disconnected. |
+| SCD40 Sensor Data Frozen | Sensor data freeze (sensor provides stale data) | The control system uses outdated data, leading to improper decisions in temperature, humidity, or CO2 control | 9 | 4 | 8 | 288 | Detect frozen sensor data and trigger "TEMPERATURE_SENSOR_FROZEN" error. Shut down all devices if no updated data is received. |
+| Zigbee Network (All Devices) | Zigbee network failure (packet loss, interference) | Loss of control over all Zigbee devices, leading to failure in controlling the fridge, CO2, heater, or light | 10 | 3 | 8 | 240 | Implement a watchdog timer for Zigbee communication. If no updates from any socket are received, shut down all devices. |
+| System Overheating | Excessive temperature (overheating) without malfunction of heater/lamp | Safety concern: overheating of the system without failure of heater or lamp (due to external factors) | 10 | 2 | 9 | 180 | Add a temperature relay socket to shut down the heater and light in the event of overheating (external cause). Trigger "SYSTEM_OVERHEATED" error, shutting down the lamp and heater. |
+| Control Software (Bug or Crash) | Algorithm failure or software bug leading to improper decision-making | Incorrect control of devices, leading to unsafe environmental conditions for plants (e.g., wrong heating, CO2, or light) | 10 | 4 | 6 | 240 | Implement software error handling; real-time monitoring of decision outputs; testing of safety functions in all scenarios. |
+| Temperature Sensor Failure | Fault in temperature sensor (incorrect readings or disconnected) | Incorrect temperature control, potentially causing underheating or overheating | 9 | 3 | 8 | 216 | Use redundant temperature sensors; trigger an error like "TEMPERATURE_SENSOR_INVALID" if failure detected. |
+| System Monitoring and Alerts | Alert system failure (incorrect or missed alerts) | Failure to notify user of issues (e.g., CO2 levels too high, system overheating) | 8 | 3 | 7 | 168 | Implement error handling for alert generation; ensure critical alerts are sent and logged correctly. |
+
+*RPN (Risk Priority Number) = Severity × Likelihood × Detection*
+
