@@ -391,48 +391,67 @@ var temperatureChart = new Chart(tempCtx, createChartConfig(
 var humidCtx = document.getElementById('humidityChart').getContext('2d');
 var humidityChart = new Chart(humidCtx, createChartConfig('Humidity (%)', 'rgb(54, 162, 235)'));
 var eco2Ctx = document.getElementById('eco2Chart').getContext('2d');
-var eco2Chart = new Chart(eco2Ctx, createChartConfig('eCO2 (ppm)', 'rgb(75, 192, 192)', 'rgb(255, 159, 64)', 'CO2 State', 'rgb(75, 192, 192)'));
+var eco2Chart = new Chart(eco2Ctx, createChartConfig(
+    'CO2 (ppm)', 'rgb(75, 192, 192)', 
+    null, null, 
+    'Valve State', 'rgb(255, 159, 64)',
+    null, null
+));
 
 function createChartConfig(label, borderColor, lightStateLabel, lightStateColor, fridgeStateLabel, fridgeStateColor, heaterStateLabel, heaterStateColor) {
+    const datasets = [
+        {
+            label: label,
+            borderColor: borderColor,
+            data: [],
+            yAxisID: 'y',
+            pointRadius: 0,  // Remove points/markers
+            borderWidth: 2,  // Set line width
+            tension: 0.4     // Add slight curve to the line
+        }
+    ];
+
+    if (lightStateLabel) {
+        datasets.push({
+            label: lightStateLabel,
+            borderColor: lightStateColor,
+            backgroundColor: lightStateColor,
+            data: [],
+            yAxisID: 'y1',
+            fill: false,
+            stepped: true
+        });
+    }
+
+    if (fridgeStateLabel) {
+        datasets.push({
+            label: fridgeStateLabel,
+            borderColor: fridgeStateColor,
+            backgroundColor: fridgeStateColor,
+            data: [],
+            yAxisID: 'y1',
+            fill: false,
+            stepped: true
+        });
+    }
+
+    if (heaterStateLabel) {
+        datasets.push({
+            label: heaterStateLabel,
+            borderColor: heaterStateColor,
+            backgroundColor: heaterStateColor,
+            data: [],
+            yAxisID: 'y1',
+            fill: false,
+            stepped: true
+        });
+    }
+
     return {
         type: 'line',
         data: {
             labels: [],
-            datasets: [
-                {
-                    label: label,
-                    borderColor: borderColor,
-                    data: [],
-                    yAxisID: 'y'
-                },
-                {
-                    label: lightStateLabel,
-                    borderColor: lightStateColor,
-                    backgroundColor: lightStateColor,
-                    data: [],
-                    yAxisID: 'y1',
-                    fill: false,
-                    stepped: true
-                },
-                {
-                    label: fridgeStateLabel,
-                    borderColor: fridgeStateColor,
-                    backgroundColor: fridgeStateColor,
-                    data: [],
-                    yAxisID: 'y1',
-                    fill: false,
-                    stepped: true
-                },
-                {
-                    label: heaterStateLabel,
-                    borderColor: heaterStateColor,
-                    backgroundColor: heaterStateColor,
-                    data: [],
-                    yAxisID: 'y1',
-                    fill: false,
-                    stepped: true
-                }
-            ]
+            datasets: datasets
         },
         options: {
             scales: {
@@ -451,7 +470,7 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
                         text: label
                     }
                 },
-                y1: {
+                y1: datasets.length > 1 ? {
                     type: 'linear',
                     position: 'right',
                     title: {
@@ -463,7 +482,7 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
                     },
                     min: 0,
                     max: 1
-                }
+                } : undefined
             }
         }
     };
