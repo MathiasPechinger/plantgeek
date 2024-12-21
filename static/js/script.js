@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the first active tab
     initializeTab('stream');
+    setTimeSpanDataBaseRetrieval(1); // Set initial timespan and update charts
 });
 
 function fetchConfig() {
@@ -332,7 +333,7 @@ function zigbeePairing(state) {
 
 
 
-var timespan = 120; // default timespan
+var timespan = 1; // default timespan to 1 hour
 
 function movingAverage(data, period) {
     let result = [];
@@ -383,7 +384,7 @@ function updateTimespan() {
 // Define the chart configurations
 var tempCtx = document.getElementById('temperatureChart').getContext('2d');
 var temperatureChart = new Chart(tempCtx, createChartConfig(
-    'Temperature (C)', 'rgb(255, 99, 132)', 
+    'Temperature (°C)', 'rgb(255, 99, 132)', 
     'Light State', 'rgb(255, 205, 86)', 
     'Fridge State', 'rgb(54, 162, 235)',
     'Heater State', 'rgb(255, 99, 71)'
@@ -405,9 +406,9 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
             borderColor: borderColor,
             data: [],
             yAxisID: 'y',
-            pointRadius: 0,  // Remove points/markers
-            borderWidth: 2,  // Set line width
-            tension: 0.4     // Add slight curve to the line
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.4
         }
     ];
 
@@ -459,8 +460,18 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
                     type: 'linear',
                     title: {
                         display: true,
-                        text: 'last 24 hours'
+                        text: getTimespanLabel()
                     },
+                    ticks: {
+                        callback: function(value) {
+                            const absValue = Math.abs(value);
+                            if (timespan <= 1) {
+                                return absValue + 'm';
+                            } else {
+                                return (absValue/60).toFixed(1) + 'h';
+                            }
+                        }
+                    }
                 },
                 y: {
                     type: 'linear',
@@ -488,7 +499,19 @@ function createChartConfig(label, borderColor, lightStateLabel, lightStateColor,
     };
 }
 
-
+function getTimespanLabel() {
+    switch(timespan) {
+        case 1:
+            return 'last hour';
+        case 4:
+            return 'last 4 hours';
+        case 12:
+            return 'last 12 hours';
+        case 24:
+        default:
+            return 'last 24 hours';
+    }
+}
 
 function updateChart(chart, data) {
     if (data[0].length === 0) {
@@ -498,12 +521,20 @@ function updateChart(chart, data) {
             dataset.data = [];
         });
     } else {
-        chart.data.labels = data[0].map((_, index) => index); // Update labels if necessary
+        // Create time labels based on timespan
+        const totalPoints = data[0].length;
+        chart.options.scales.x.min = -timespan * 60;  // Set min based on timespan in minutes
+        chart.options.scales.x.max = 0;               // Current time is always 0
+
+        // Update datasets with their respective data
         chart.data.datasets.forEach((dataset, index) => {
-            dataset.data = data[index]; // Update data within the dataset
+            dataset.data = data[index].map((value, i) => ({
+                x: -(timespan * 60 * (1 - i/totalPoints)),  // Calculate x value in minutes
+                y: value
+            }));
         });
     }
-    chart.update(); // Redraw the chart
+    chart.update('none'); // Update without animation for better performance
 }
 
 
@@ -772,13 +803,21 @@ function fetchData() {
 }
 
 function setTimeSpanDataBaseRetrieval(timeSpan) {
+    timespan = timeSpan; // Update the global timespan variable
+    
+    // Update x-axis labels for all charts
+    [temperatureChart, humidityChart, eco2Chart].forEach(chart => {
+        chart.options.scales.x.title.text = getTimespanLabel();
+        chart.update();
+    });
+
     $.ajax({
         url: '/dataFetchTimeSpan',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({timeSpan: timeSpan}),
         success: function(response) {
-            // console.log("Response: " + JSON.stringify(response));
+            fetchData(); // Fetch new data with updated timespan
         },
         error: function(xhr, status, error) {
             console.log("Error: " + error);
