@@ -159,13 +159,6 @@
             <!-- Environment Tab -->
             <div class="tab-pane fade" id="environment" role="tabpanel">
                 <!-- Copy existing Temperature & Environment content -->
-                <div class="card">
-                    <div class="card-header">System Temperature</div>
-                    <div class="card-body">
-                        <p>CPU Temperature: <span id="cpu_temperature"></span></p>
-                        <p>RP1 ADC Temperature: <span id="rp1_adc_temperature"></span></p>
-                    </div>
-                </div>
 
                 <div class="card">
                     <div class="card-header">Environmental Metrics</div>
@@ -194,6 +187,13 @@
                             <p>Current: <span id="actual-eco2"></span></p>
                             <canvas id="eco2Chart"></canvas>
                         </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">System Temperature</div>
+                    <div class="card-body">
+                        <p>CPU Temperature: <span id="cpu_temperature"></span></p>
+                        <p>RP1 ADC Temperature: <span id="rp1_adc_temperature"></span></p>
                     </div>
                 </div>
             </div>
