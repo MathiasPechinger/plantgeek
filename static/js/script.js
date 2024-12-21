@@ -521,14 +521,20 @@ function updateChart(chart, data) {
             dataset.data = [];
         });
     } else {
-        // Create time labels based on timespan
-        const totalPoints = data[0].length;
+        // Sample data if there are too many points and timespan > 2h
+        let sampledData = data;
+        if (timespan > 2 && data[0].length > 3600) {
+            const sampleRate = Math.ceil(data[0].length / 3600);
+            sampledData = data.map(dataset => sampleData(dataset, sampleRate));
+        }
+
+        const totalPoints = sampledData[0].length;
         chart.options.scales.x.min = -timespan * 60;  // Set min based on timespan in minutes
         chart.options.scales.x.max = 0;               // Current time is always 0
 
         // Update datasets with their respective data
         chart.data.datasets.forEach((dataset, index) => {
-            dataset.data = data[index].map((value, i) => ({
+            dataset.data = sampledData[index].map((value, i) => ({
                 x: -(timespan * 60 * (1 - i/totalPoints)),  // Calculate x value in minutes
                 y: value
             }));
