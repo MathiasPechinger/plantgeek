@@ -190,4 +190,5 @@ Source: [ArduCam Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Nat
 ### Known Issues
 
 - The fridge controller has a bug where it does not switch on if the humidity is too high.
+- An empty CO2 reservoir is not detected automatically and will not create and alarm.
 
