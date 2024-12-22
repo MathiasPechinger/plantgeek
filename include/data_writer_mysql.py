@@ -7,6 +7,20 @@ import adafruit_scd4x
 import mysql.connector
 from mysql.connector import Error
 import logging
+import importlib.util
+import sys
+import os
+
+def get_scd4x_class():
+    """Dynamically choose between real and mock sensor based on environment"""
+    if 'TESTING' in os.environ:
+        # Use mock sensor
+        from tests.mock_scd4x import MockSCD4X
+        return MockSCD4X
+    else:
+        # Use real sensor
+        import adafruit_scd4x
+        return adafruit_scd4x.SCD4X
 
 class SensorDataLogger:
     def __init__(self, use_dht22=False, use_scd41=True, use_ccs811=False):
@@ -84,11 +98,9 @@ class SensorDataLogger:
         
         for attempt in range(max_retries):
             try:
-                if self.use_ccs811 and self.use_dht22:
-                    self.sensor = CCS811(self.i2c)
-                    self.dht_device = adafruit_dht.DHT22(board.D4)
-                elif self.use_scd41:
-                    self.scd4x = adafruit_scd4x.SCD4X(self.i2c)
+                if self.use_scd41:
+                    SCD4X = get_scd4x_class()
+                    self.scd4x = SCD4X(self.i2c)
                     self.scd4x.start_periodic_measurement()
                     time.sleep(5)
                 elif self.use_dht22:
