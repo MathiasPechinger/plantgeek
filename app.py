@@ -577,6 +577,26 @@ def data_now():
     conn.close()
     return jsonify(results)
 
+@app.route('/system/warnings')
+def get_warnings():
+    warnings = systemHealth.get_active_warnings()
+    warnings_data = [{
+        'code': warning.code.value,
+        'message': warning.message,
+        'timestamp': warning.timestamp.isoformat()
+    } for warning in warnings]
+    return jsonify(warnings_data)
+
+@app.route('/system/errors')
+def get_errors():
+    errors = systemHealth.get_active_errors()
+    errors_data = [{
+        'code': error.code.value,
+        'message': error.message,
+        'timestamp': error.timestamp.isoformat()
+    } for error in errors]
+    return jsonify(errors_data)
+
 def run_scheduler(scheduler):
     try:
         scheduler.run()

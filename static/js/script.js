@@ -13,7 +13,77 @@ function initializeTab(tabId) {
         case 'environment':
             startEnvironmentInterval();
             break;
+        case 'warnings':
+            startWarningsInterval();
+            break;
+        case 'config':
+            fetchConfig();
+            break;
     }
+}
+
+function startWarningsInterval() {
+    activeIntervals.warnings = [];
+    fetchWarningsAndErrors();
+    activeIntervals.warnings.push(setInterval(fetchWarningsAndErrors, 5000));
+}
+
+function fetchWarningsAndErrors() {
+    // Fetch warnings
+    fetch('/system/warnings')
+        .then(response => response.json())
+        .then(data => updateWarningsList(data))
+        .catch(error => console.error('Error fetching warnings:', error));
+
+    // Fetch errors
+    fetch('/system/errors')
+        .then(response => response.json())
+        .then(data => updateErrorsList(data))
+        .catch(error => console.error('Error fetching errors:', error));
+}
+
+function updateWarningsList(warnings) {
+    const warningsList = document.getElementById('warnings-list');
+    warningsList.innerHTML = '';
+    
+    if (warnings.length === 0) {
+        warningsList.innerHTML = '<li class="list-group-item text-success">No active warnings</li>';
+        return;
+    }
+
+    warnings.forEach(warning => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item list-group-item-warning';
+        const timestamp = new Date(warning.timestamp).toLocaleString();
+        li.innerHTML = `
+            <h6 class="mb-1">Warning Code: ${warning.code}</h6>
+            <p class="mb-1">${warning.message}</p>
+            <small class="text-muted">Reported: ${timestamp}</small>
+        `;
+        warningsList.appendChild(li);
+    });
+}
+
+function updateErrorsList(errors) {
+    const errorsList = document.getElementById('errors-list');
+    errorsList.innerHTML = '';
+    
+    if (errors.length === 0) {
+        errorsList.innerHTML = '<li class="list-group-item text-success">No active errors</li>';
+        return;
+    }
+
+    errors.forEach(error => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item list-group-item-danger';
+        const timestamp = new Date(error.timestamp).toLocaleString();
+        li.innerHTML = `
+            <h6 class="mb-1">Error Code: ${error.code}</h6>
+            <p class="mb-1">${error.message}</p>
+            <small class="text-muted">Reported: ${timestamp}</small>
+        `;
+        errorsList.appendChild(li);
+    });
 }
 
 function stopAllIntervals() {

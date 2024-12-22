@@ -128,6 +128,9 @@
             <li class="nav-item">
                 <a class="nav-link" id="config-tab" data-bs-toggle="tab" href="#config" role="tab">Configuration</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="warnings-tab" data-bs-toggle="tab" href="#warnings" role="tab">System Status</a>
+            </li>
         </ul>
 
         <div class="tab-content" id="mainTabContent">
@@ -293,6 +296,29 @@
                                 <button type="submit" class="btn btn-primary">Save Configuration</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warnings Tab -->
+            <div class="tab-pane fade" id="warnings" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">System Warnings & Errors</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="text-warning mb-3">Active Warnings</h5>
+                                <ul id="warnings-list" class="list-group">
+                                    <!-- Warnings will be populated here -->
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="text-danger mb-3">Active Errors</h5>
+                                <ul id="errors-list" class="list-group">
+                                    <!-- Errors will be populated here -->
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
