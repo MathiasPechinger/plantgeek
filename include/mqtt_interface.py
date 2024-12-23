@@ -231,15 +231,12 @@ class MQTT_Interface:
         for device in self.devices:
             if not device.availability:
                 self.devicesHealthy = False
-            elif self.devices[0].availability == True and self.devices[1].availability == True and self.devices[2].availability == True:
+            elif (self.devices[0].availability == True and 
+                  self.devices[1].availability == True and 
+                  self.devices[2].availability == True and 
+                  self.devices[3].availability == True):
                 self.devicesHealthy = True
                 
-    def updateBridgeHealthNoDevice2(self):
-        for device in self.devices:
-            if self.devices[0].availability == False or self.devices[1].availability == False:
-                self.devicesHealthy = False
-            elif self.devices[0].availability == True and self.devices[1].availability == True:
-                self.devicesHealthy = True
                     
     def mainloop(self, scheduler_mqtt, systemHealth):
         if self.availabiltyCheckCounter <= 0:
@@ -286,7 +283,7 @@ class MQTT_Interface:
                 device.manualOverrideActive = False
         
         
-        self.updateBridgeHealthNoDevice2()
+        self.updateBridgeHealth()
         
         if not systemHealth.systemHealthy:
             self.switch_off(self.devices[0].friendly_name)
