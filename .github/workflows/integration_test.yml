@@ -50,4 +50,4 @@ jobs:
         release_name: Release ${{ env.next_version }}
         draft: true
         prerelease: false
-        generate_release_notes: true
+        token: ${{ secrets.GITHUB_TOKEN }}
