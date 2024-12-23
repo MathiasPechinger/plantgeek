@@ -2,10 +2,15 @@ import time
 from datetime import datetime
 from typing import List, Optional
 from .health_monitoring_errors import HealthError, HealthErrorCode, HealthWarningCode, HealthWarning
+import os
 
 class ControlAccuracyMonitor:
     def __init__(self, config):
-        self.window_size = 60  # 1 hour (assuming 1 minute intervals) (todo make this dependent on the config)
+        # Check if we're in testing mode
+        self.testing = os.environ.get('TESTING', '0') == '1'
+        # Set window size based on testing mode
+        self.window_size = 5 if self.testing else 60  # 5 readings for testing, 60 for production
+        
         self.temp_threshold = 2.5  # °C deviation threshold
         self.co2_threshold = 1000   # ppm deviation threshold
         self.humidity_threshold = 10 # % deviation threshold
@@ -57,18 +62,18 @@ class ControlAccuracyMonitor:
                 warnings.append((HealthWarningCode.TEMPERATURE_CONTROL_HIGH,
                              f"Temperature control above target: {avg_temp:.1f}°C vs target {target_temp}°C"))
                 
-        # CO2 control check (only during day time)
-        if is_day_time:
-            if len(self.co2_values) >= self.window_size:
-                avg_co2 = sum(self.co2_values) / len(self.co2_values)
-                deviation = avg_co2 - self.target_co2
-                
-                if deviation < -self.co2_threshold:
-                    warnings.append((HealthWarningCode.CO2_CONTROL_LOW,
-                                f"CO2 control below target: {avg_co2:.0f}ppm vs target {self.target_co2}ppm"))
-                elif deviation > self.co2_threshold:
-                    warnings.append((HealthWarningCode.CO2_CONTROL_HIGH,
-                                f"CO2 control above target: {avg_co2:.0f}ppm vs target {self.target_co2}ppm"))
+        # CO2 control check (only reasnabloe during day time)
+        # if is_day_time:
+        if len(self.co2_values) >= self.window_size:
+            avg_co2 = sum(self.co2_values) / len(self.co2_values)
+            deviation = avg_co2 - self.target_co2
+            
+            if deviation < -self.co2_threshold:
+                warnings.append((HealthWarningCode.CO2_CONTROL_LOW,
+                            f"CO2 control below target: {avg_co2:.0f}ppm vs target {self.target_co2}ppm"))
+            elif deviation > self.co2_threshold:
+                warnings.append((HealthWarningCode.CO2_CONTROL_HIGH,
+                            f"CO2 control above target: {avg_co2:.0f}ppm vs target {self.target_co2}ppm"))
                 
         # Humidity control check
         if len(self.humidity_values) >= self.window_size:
@@ -90,7 +95,10 @@ class HealthMonitor:
         self.systemOverheated = False
         self.initDone = False
         self.previousTemperature = None
-        self.temperatureFrozenTimeout = 300  # 5 minutes
+        # Check if we're in testing mode
+        self.testing = os.environ.get('TESTING', '0') == '1'
+        # Set timeout based on testing mode
+        self.temperatureFrozenTimeout = 10 if self.testing else 300  # 20s for testing, 5 minutes for production
         self.temperatureFrozenCounter = 0
         self.overheatTemperature = 33.5
         self.overheatHysteresis = 1.0
