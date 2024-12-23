@@ -3,12 +3,12 @@ name: Raspberry Pi Tests
 on:
   push:
     branches:
-      - main  
+      - main
       - dev-issue-detection
 
 jobs:
   test:
-    runs-on: self-hosted  
+    runs-on: self-hosted
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -50,4 +50,4 @@ jobs:
         release_name: Release ${{ env.next_version }}
         draft: true
         prerelease: false
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
