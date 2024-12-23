@@ -28,26 +28,3 @@ jobs:
         source venv/bin/activate
         ./tests/integration_test_zigbee.sh
 
-    - name: Determine next version
-      id: version
-      run: |
-        git fetch --tags
-        latest_tag=$(git tag --list 'PlantGeek_alpha_v_*' | sort -V | tail -n 1)
-        if [ -z "$latest_tag" ]; then
-          next_version="v_1_1"
-        else
-          version_number=$(echo $latest_tag | sed 's/PlantGeek_alpha_v_//; s/_/./g')
-          IFS='.' read -r major minor <<< "$version_number"
-          next_version="v_${major}_$((minor + 1))"
-        fi
-        echo "next_version=PlantGeek_alpha_$next_version" >> $GITHUB_ENV
-
-    - name: Create Draft Release
-      if: success()
-      uses: actions/create-release@v1
-      with:
-        tag_name: ${{ env.next_version }}
-        release_name: Release ${{ env.next_version }}
-        draft: true
-        prerelease: false
-        token: ${{ secrets.GITHUB_TOKEN }}
