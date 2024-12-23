@@ -27,3 +27,8 @@ jobs:
       run: |
         source venv/bin/activate
         ./tests/test_sensor_errors.sh
+
+    - name: Run Zigbee integration tests
+      run: |
+        source venv/bin/activate
+        ./tests/integration_test_zigbee.sh
