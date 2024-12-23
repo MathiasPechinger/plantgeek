@@ -183,6 +183,50 @@ class TestHealthMonitor(unittest.TestCase):
         self.assertTrue(any(error.code == HealthErrorCode.SENSOR_DATA_NOT_UPDATED 
                           for error in active_errors))
 
+    def test_missing_timestamp(self):
+        """Test system response to missing timestamp"""
+        self.mock_sensor_data.lastTimestamp = None
+        
+        self.health_monitor.check_status(
+            self.mock_scheduler,
+            self.mock_mqtt,
+            self.mock_sensor_data,
+            True
+        )
+        
+        active_errors = self.health_monitor.get_active_errors()
+        self.assertTrue(any(error.code == HealthErrorCode.TIMESTAMP_MISSING 
+                          for error in active_errors))
+
+    def test_system_overheat(self):
+        """Test system overheat detection"""
+        self.mock_sensor_data.currentTemperature = 34.0
+        
+        self.health_monitor.check_status(
+            self.mock_scheduler,
+            self.mock_mqtt,
+            self.mock_sensor_data,
+            True
+        )
+        
+        active_errors = self.health_monitor.get_active_errors()
+        self.assertTrue(any(error.code == HealthErrorCode.SYSTEM_OVERHEATED 
+                          for error in active_errors))
+        
+        # Test error resolves when temperature drops
+        self.mock_sensor_data.currentTemperature = 32.0
+        
+        self.health_monitor.check_status(
+            self.mock_scheduler,
+            self.mock_mqtt,
+            self.mock_sensor_data,
+            True
+        )
+        
+        active_errors = self.health_monitor.get_active_errors()
+        self.assertFalse(any(error.code == HealthErrorCode.SYSTEM_OVERHEATED 
+                           for error in active_errors))
+
 
 if __name__ == '__main__':
     unittest.main()
