@@ -1,0 +1,29 @@
+name: Raspberry Pi Tests
+
+on:
+  push:
+    branches:
+      - main  
+      - dev-issue-detection
+
+jobs:
+  test:
+    runs-on: self-hosted  
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # - name: Set up Python
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: '3.x'  
+
+    - name: Run setup script with CI flag
+      run: |
+        chmod +x setup.sh
+        ./setup.sh --ci
+
+    - name: Run sensor error tests
+      run: |
+        source venv/bin/activate
+        ./tests/test_sensor_errors.sh

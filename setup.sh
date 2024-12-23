@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check for CI flag
+CI_MODE=false
+if [[ "$1" == "--ci" ]]; then
+    CI_MODE=true
+fi
+
 # ======================================
 # --------------------------------------
 # --- Install basics -------------------
@@ -40,8 +46,10 @@ Y
 EOF
 
 # Start and enable MariaDB service
-sudo systemctl start mariadb
-sudo systemctl enable mariadb
+if [ "$CI_MODE" = false ]; then
+    sudo systemctl start mariadb
+    sudo systemctl enable mariadb
+fi
 
 # Create a database and user
 sudo mariadb -u root -ppassword <<EOF
@@ -70,7 +78,6 @@ EOF
 
 echo "Table created."
 
-
 echo "MariaDB installation and setup complete."
 
 # ============================================================
@@ -82,7 +89,7 @@ echo "MariaDB installation and setup complete."
 # Zigbee Device Control with Raspberry Pi and Sonoff Zigbee 
 # 3.0 USB Dongle Plus
 
-# Needed for installing the serice
+# Needed for installing the service
 SERVICE_DIR="$(pwd)"
 
 # -------------------------------------------------------------
@@ -104,9 +111,11 @@ sudo apt-get install -y git curl build-essential npm python3-pip
 echo "Installing Mosquitto MQTT broker..."
 sudo apt-get install -y mosquitto mosquitto-clients
 
-echo "Enabling and starting Mosquitto service..."
-sudo systemctl enable mosquitto
-sudo systemctl start mosquitto
+if [ "$CI_MODE" = false ]; then
+    echo "Enabling and starting Mosquitto service..."
+    sudo systemctl enable mosquitto
+    sudo systemctl start mosquitto
+fi
 
 # -------------------------------------------------------------
 # Step 4: Install and Configure Zigbee2MQTT
@@ -133,7 +142,10 @@ echo "Configuring Zigbee2MQTT..."
 echo "Which Zigbee adapter are you using?"
 echo "1) Sonoff ZBDongle-E (V2 model)"
 echo "2) ConBee III"
-read -p "Enter 1 or 2: " adapter_choice
+read -t 5 -p "Enter 1 or 2 (default is 1): " adapter_choice
+
+# Default to Sonoff if no input is provided
+adapter_choice=${adapter_choice:-1}
 
 if [ ! -f "$CONFIG_FILE" ]; then
     mkdir -p data
@@ -246,7 +258,7 @@ EOL
 fi
 
 # -------------------------------------------------------------
-# Step 6: Install Zigebee2MQTT as a service
+# Step 6: Install Zigbee2MQTT as a service
 # -------------------------------------------------------------
 echo "Installing Zigbee2MQTT as a service..."
 
@@ -260,7 +272,6 @@ WORKING_DIR="/home/$USERNAME/zigbee2mqtt"
 
 # Print working directory
 echo "Working Directory: $WORKING_DIR"
-
 
 EXEC_START="/usr/bin/node"
 SCRIPT_PATH="$WORKING_DIR/index.js"
@@ -282,9 +293,6 @@ sudo chmod 644 $SERVICE_FILE
 
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload
-
-
-
 
 # ======================================
 # --------------------------------------
@@ -327,22 +335,23 @@ sudo chmod 644 $SERVICE_FILE
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload
 
-
 # ======================================
 # --------------------------------------
 # --- Enable services ------------------
 # --------------------------------------
 # ======================================
 
-# Enable the service to start on boot
-sudo systemctl enable drowbox_mqtt_interface
+if [ "$CI_MODE" = false ]; then
+    # Enable the service to start on boot
+    sudo systemctl enable drowbox_mqtt_interface
 
-# Start the service immediately
-sudo systemctl start drowbox_mqtt_interface
+    # Start the service immediately
+    sudo systemctl start drowbox_mqtt_interface
 
-# Enable the service to start on boot
-sudo systemctl enable drowbox_webapp
+    # Enable the service to start on boot
+    sudo systemctl enable drowbox_webapp
 
-# Start the service immediately
-sudo systemctl start drowbox_webapp
+    # Start the service immediately
+    sudo systemctl start drowbox_webapp
+fi
 
