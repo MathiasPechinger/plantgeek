@@ -5,7 +5,7 @@ import random
 import sys
 
 class ZigbeeEmulator:
-    def __init__(self, device_to_fail=None, fail_after_seconds=10):
+    def __init__(self, device_to_fail=None, fail_after_seconds=3):
         # MQTT setup
         self.client = mqtt.Client()
         self.client.username_pw_set("mqtt", "mqtt")

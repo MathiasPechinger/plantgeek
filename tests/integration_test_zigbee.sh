@@ -37,7 +37,7 @@ test_socket_failure() {
     fi
 
     # Wait for device failure
-    sleep 15 # detection takes about 20 seconds
+    sleep 30 # detection takes about 20 seconds
 
     # Check if system detected the failure
     HEALTH_STATUS=$(curl -s http://localhost:5000/system/errors)
@@ -58,17 +58,17 @@ test_socket_failure() {
 echo "=== Testing Light Socket ==="
 test_socket_failure "Light" 0
 LIGHT_TEST=$?
-sleep 10  # Wait between tests
+sleep 2  # Wait between tests
 
 echo "=== Testing Fridge Socket ==="
 test_socket_failure "Fridge" 1
 FRIDGE_TEST=$?
-sleep 10  # Wait between tests
+sleep 2  # Wait between tests
 
 echo "=== Testing CO2 Socket ==="
 test_socket_failure "CO2" 2
 CO2_TEST=$?
-sleep 10  # Wait between tests
+sleep 2  # Wait between tests
 
 echo "=== Testing Heater Socket ==="
 test_socket_failure "Heater" 3
