@@ -169,13 +169,19 @@ class Fridge:
             # check if we are in the historysis range
             # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.temperatureHysteresis}")
             
+            # add margin to allow fridge cool down after heater switches off
+            margin = 0.9 # degC
+            
+            # keep the fridge running even if we we are below the control temperature
             if temp > self.controlTemperature - self.temperatureHysteresis and temp < self.controlTemperature:
                 self.switch_on(mqtt_interface)
                 # print("Switching on, keep histeresis going.")
+            # switch off, as we have reached the control temperature + the hysteresis
             elif temp < self.controlTemperature - self.temperatureHysteresis:
                 self.switch_off(mqtt_interface)
                 # print("Switching off")
-            elif temp > self.controlTemperature:
+            # switchon, to cool down the system + margin for heater delay. (system might cool down without the frdige, beta testing)
+            elif temp > self.controlTemperature + margin:
                 self.switch_on(mqtt_interface)
                 # print("Switching on")
             else:

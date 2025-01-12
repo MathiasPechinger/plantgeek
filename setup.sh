@@ -127,6 +127,8 @@ cd ~/zigbee2mqtt
 echo "Cloning Zigbee2MQTT repository..."
 git clone --depth 1 https://github.com/Koenkk/zigbee2mqtt.git .
 
+git checkout 1.42.0
+
 echo "Installing Zigbee2MQTT dependencies..."
 npm ci
 
