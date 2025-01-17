@@ -13,7 +13,7 @@ start_app() {
     
     # Start main app
     source venv/bin/activate
-    TESTING=1 python app.py > logs/app.log 2>&1 &
+    TESTING=1 python app.py --no-camera > logs/app.log 2>&1 &
     APP_PID=$!
     sleep 1  # Wait for app to initialize
     echo "App started with PID $APP_PID"
