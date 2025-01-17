@@ -26,6 +26,7 @@ from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
 
 import faulthandler
+import argparse
 
 faulthandler.enable()
 
@@ -617,12 +618,15 @@ def start_sensor_data_logger():
 
 
 if __name__ == '__main__':
-    
+    # Add command line argument parsing
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-camera', action='store_true', help='Disable camera functionality')
+    args = parser.parse_args()
+    enable_camera = not args.no_camera
     
     # Load the JSON configuration file
     with open(CONFIG_FILE, 'r') as file:
         config = json.load(file)
-
 
     # Access the configuration values
     plantGeekBackendInUse = config['PlanGeekBackend']['plantGeekBackendInUse']
@@ -651,7 +655,11 @@ if __name__ == '__main__':
     scheduler_health = sched.scheduler(time.time, time.sleep)
     scheduler_camera = sched.scheduler(time.time, time.sleep)
        
-    camera = CameraRecorder()
+    if enable_camera:
+        camera = CameraRecorder()
+    else:
+        camera = None
+        
     systemHealth = HealthMonitor(config)
     systemHealth.set_debug(False)  # Enable debug printing
     
@@ -697,7 +705,8 @@ if __name__ == '__main__':
         scheduler_heater.enter(0, 1, heater.control_heater, (scheduler_heater,mqtt_interface,))
         
     scheduler_health.enter(10, 1, systemHealth.check_status,(scheduler_health, mqtt_interface,sensorData,activateMQTTinterface,)) # 10 seconds delay to allow for bootup
-    scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
+    if enable_camera:
+        scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
 
     
     if activateCO2control:
@@ -720,13 +729,15 @@ if __name__ == '__main__':
         heater_thread.start()
         light_thread.start()
         
+    if enable_camera:
+        camera_thread = threading.Thread(target=run_scheduler, args=(scheduler_camera,))
+        camera_thread.start()
     
     if activateCO2control:
         threads = [
             threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
             threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
             threading.Thread(target=run_scheduler, args=(scheduler_health,)),
-            threading.Thread(target=run_scheduler, args=(scheduler_camera,)),
             threading.Thread(target=run_scheduler, args=(scheduler_co2,))
         ]
     else:
@@ -734,7 +745,6 @@ if __name__ == '__main__':
             threading.Thread(target=run_scheduler, args=(scheduler_sensorCheck,)),
             threading.Thread(target=run_scheduler, args=(scheduler_databaseCheck,)),
             threading.Thread(target=run_scheduler, args=(scheduler_health,)),
-            threading.Thread(target=run_scheduler, args=(scheduler_camera,))
         ]
 
     for thread in threads:
