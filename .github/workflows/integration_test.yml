@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev-issue-detection
+      - dev-temperature-control
 
 jobs:
   test:
