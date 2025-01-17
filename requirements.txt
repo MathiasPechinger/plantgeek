@@ -44,3 +44,4 @@ urllib3==2.2.1
 Werkzeug==3.0.2
 numpy>=1.21.0
 simplejpeg>=1.4.0
+pytest==8.3.4
