@@ -2,20 +2,28 @@ import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta
 import time
-from include.heater_controller import Heater
+from include.fridge_controller import Fridge, ControlMode
 
 class MockMQTTInterface:
     def __init__(self):
-        self.heater_state = False
+        self.fridge_state = False
+        self.light_state = True
         
-    def setHeaterState(self, state):
-        self.heater_state = state
+    def setFridgeState(self, state):
+        self.fridge_state = state
         return True
         
-    def getHeaterState(self):
-        return self.heater_state
+    def getFridgeState(self):
+        return self.fridge_state
+    
+    def getLightState(self):
+        return True
+    
+    def setLightState(self, state):
+        self.light_state = state
+        return True
 
-class TestHeaterController(unittest.TestCase):
+class TestFridgeController(unittest.TestCase):
     def setUp(self):
         self.db_config = {
             'host': 'dummy',
@@ -23,17 +31,16 @@ class TestHeaterController(unittest.TestCase):
             'password': 'dummy',
             'database': 'dummy'
         }
-        self.heater = Heater(self.db_config)
-        self.heater.set_timeout(3)  # Set timeout to 3 seconds for faster testing
+        self.fridge = Fridge(self.db_config)
         self.mqtt = MockMQTTInterface()
         
-        # Set control parameters
-        self.heater.set_control_temperature(24.5)  # Target temperature
-        self.heater.set_hysteresis(0.5)           # Hysteresis
-        
-        # Mock is_temperature_falling to always return True
-        self.heater.is_temperature_falling = lambda: True
-        
+        # Set control parameters for temperature control
+        self.fridge.set_control_temperature_day(24.5)    # Target day temperature
+        self.fridge.set_control_temperature_night(17.5)  # Target night temperature
+        self.fridge.set_temperature_hysteresis(0.5)      # Hysteresis
+        self.fridge.set_control_mode(ControlMode.TEMPERATURE_CONTROL) 
+        self.fridge.set_timeout(3)
+
     @patch('mysql.connector.connect')
     def test_temperature_control_cycle(self, mock_connect):
         # Create a mock cursor and connection
@@ -73,42 +80,42 @@ class TestHeaterController(unittest.TestCase):
         ]
         
         expected_states = [
-            # From 23 to 26 (increasing) - ON until 25.0
+            # From 23 to 26 (increasing) - OFF until 25.5 (target + hysteresis)
+            False, False, False, False, False, False, False, False, False, False,
+            False, False, False, False, False, False, False, False, False, False,
+            False, False, False, False, False, True, True, True, True, True, True,
+            # From 26 to 23 (decreasing) - ON until 24.5 (target)
             True, True, True, True, True, True, True, True, True, True,
-            True, True, True, True, True, True, True, True, True, True,
+            True, True, True, True, True, False, False, False, False, False,
             False, False, False, False, False, False, False, False, False, False, False,
-            # From 26 to 23 (decreasing) - Stays OFF until timeout after reaching 24.5
+            # From 23 to 24.8 (increasing) - OFF all the way (below target + hysteresis)
             False, False, False, False, False, False, False, False, False, False,
-            False, False, False, False, False, False, True, True, True, True,
-            True, True, True, True, True, True, True, True, True, True, True,
-            # From 23 to 24.8 (increasing) - ON until reaches 24.8
-            True, True, True, True, True, True, True, True, True, True,
-            True, True, True, True, True, True, True, True, True,
-            # From 24.8 to 23 (decreasing) - ON all the way as below 25.0
-            True, True, True, True, True, True, True, True, True,
-            True, True, True, True, True, True, True, True, True, True,
-            # From 23 to 26 (increasing) - ON until 25.0
-            True, True, True, True, True, True, True, True, True, True,
-            True, True, True, True, True, True, True, True, True, True,
-            False, False, False, False, False, False, False, False, False, False, False,
-            # From 26 to 24.8 (decreasing) - Stays OFF until timeout after reaching 24.5
+            False, False, False, False, False, False, False, False, False,
+            # From 24.8 to 23 (decreasing) - OFF all the way (below target + hysteresis)
+            False, False, False, False, False, False, False, False, False,
             False, False, False, False, False, False, False, False, False, False,
-            False, False, False,
-            # From 24.8 to 26 (increasing) - stays off 
+            # From 23 to 26 (increasing) - OFF until 25.5, then ON
             False, False, False, False, False, False, False, False, False, False,
-            False, False, False,
-            # From 26 to 23 (decreasing) - Stays OFF until timeout after reaching 24.5
             False, False, False, False, False, False, False, False, False, False,
-            False, False, False, False, False, False, True, True, True, True,
-            True, True, True, True, True, True, True, True, True, True, True
+            False, False, False, False, False, True, True, True, True, True, True,
+            # From 26 to 24.8 (decreasing) - ON until 24.5
+            True, True, True, True, True, True, True, True, True, True,
+            True, True, True,
+            # From 24.8 to 26 (increasing) - ON until 25.5
+            True, True, True, True, True, True, True, True, True, True,
+            True, True, True,
+            # From 26 to 23 (decreasing) - ON until 24.5
+            True, True, True, True, True, True, True, True, True, True,
+            True, True, True, True, True, False, False, False, False, False,
+            False, False, False, False, False, False, False, False, False, False, False
         ]
         
         # Create a mock scheduler
         mock_scheduler = MagicMock()
         mock_scheduler.enter = MagicMock()
         
-        # Indices where heater switches off (temperature reaches 25.0°C)
-        switch_off_indices = [20, 140, 232]  # These are the indices where temp hits 25.0
+        # Indices where fridge switches off (temperature reaches 24.5°C)
+        switch_off_indices = [46, 156]  # These are the indices where temp hits 24.5°C
         
         # Test sections with their ranges
         test_sections = [
@@ -122,6 +129,7 @@ class TestHeaterController(unittest.TestCase):
             (156, 187, "Testing 26°C to 23°C (decreasing)")
         ]
         
+        
         current_section = 0
         for i, (temp, expected_state) in enumerate(zip(test_temperatures, expected_states)):
             # Print section header when starting new section
@@ -132,20 +140,20 @@ class TestHeaterController(unittest.TestCase):
             # Setup mock database response
             mock_cursor.fetchall.return_value = [(temp,)]
             
-            # Run heater control cycle
-            self.heater.control_heater(mock_scheduler, self.mqtt)
+            # Run fridge control cycle
+            self.fridge.control_fridge(mock_scheduler, self.mqtt)
             
             # Print current test state
             print(f"Temperature: {temp:4.1f}°C, Expected: {'ON ' if expected_state else 'OFF'}, "
-                  f"Actual: {'ON ' if self.mqtt.getHeaterState() else 'OFF'}")
+                  f"Actual: {'ON ' if self.mqtt.getFridgeState() else 'OFF'}")
             
-            # Verify heater state
+            # Verify fridge state
             self.assertEqual(
-                self.mqtt.getHeaterState(), 
+                self.mqtt.getFridgeState(), 
                 expected_state,
-                f"Failed at temperature {temp}°C: expected heater to be "
+                f"Failed at temperature {temp}°C: expected fridge to be "
                 f"{'ON' if expected_state else 'OFF'} but it was "
-                f"{'ON' if self.mqtt.getHeaterState() else 'OFF'}"
+                f"{'ON' if self.mqtt.getFridgeState() else 'OFF'}"
             )
             
             # Handle sleep timing based on test position

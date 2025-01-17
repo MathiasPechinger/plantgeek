@@ -16,15 +16,20 @@ class Fridge:
         self.controlTemperatureNight = 17.5
         self.controlTemperatureDay = 25.0
         self.temperatureHysteresis = 0.6
+        self.additionalTemperatureMargin = 0.2 # the fridge does not need to be switched on, as the temperature might already reduce due to the heater shut down ath the hysteresis! Energie saving functionallity. Set to zero if you don't care ;)
         self.controlHumidity = 45
         self.humidityHysteresis = 2
         self.controlTemperatureFallbackMaxLevel = 28.0
         self.controlTemperatureFallbackMinLevel = 17.0
+        self.timeout = 30
         self.controlMode = ControlMode.HUMIDITY_CONTROL
         # self.controlMode = ControlMode.TEMPERATURE_CONTROL
         
     def set_control_mode(self, mode):
         self.controlMode = mode
+        
+    def set_timeout(self, timeout):
+        self.timeout = float(timeout)
         
     def set_control_temperature_day(self, temp):
         self.controlTemperatureDay = float(temp)
@@ -49,15 +54,14 @@ class Fridge:
         
         
     def switch_on(self, mqtt_interface):
-        minimum_off_time = 30 # todo set to 60
-        if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= minimum_off_time:
+        if self.off_time is None or (datetime.datetime.now() - self.off_time).total_seconds() >= self.timeout:
             success = mqtt_interface.setFridgeState(True)        
             if success:
                 self.is_on = True
             
         else:
             print("Fridge cannot be switched on again. It was turned off for less than 1 minute(s).")
-            remaining_time = minimum_off_time - (datetime.datetime.now() - self.off_time).total_seconds()
+            remaining_time = self.timeout - (datetime.datetime.now() - self.off_time).total_seconds()
             print(f"Please wait for {remaining_time} seconds before switching on again.")
 
     def switch_off(self, mqtt_interface):
@@ -150,42 +154,43 @@ class Fridge:
         
     def temperature_control(self, sc, temp, mqtt_interface):
         
+        # Check for daytime or nighttime
         if mqtt_interface.getLightState() == True:
-            # if the light is on we switch off the fridge
             self.controlTemperature = self.controlTemperatureDay
         else:
             self.controlTemperature = self.controlTemperatureNight
-            
-        # print(f"Control temperature: {self.controlTemperature}")
-        
+                   
+        # SWITCH ON LOGIC
         if mqtt_interface.getFridgeState() == False:
-            if temp > self.controlTemperature:
+            if temp >= self.controlTemperature+self.temperatureHysteresis+self.additionalTemperatureMargin:
                 self.switch_on(mqtt_interface)
                 # print("switch on")
+            elif temp <= self.controlTemperature+self.temperatureHysteresis+self.additionalTemperatureMargin:
+                # print("Fridge is already off, we only need to switch it on if necessary")
+                pass
+            else:
+                self.switch_off(mqtt_interface)
+                print("WARNING: FRIDGE CONTROLLER UNHANDLED CASE (SWITCH ON)")
         
         # because of the automatic shutdown by the socket timeout we have to keep sending the switch on signal
         # if the temperature is still above the threshold
+        
+        # SWITCH OFF LOGIC
         if mqtt_interface.getFridgeState() == True:
-            # check if we are in the historysis range
-            # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.temperatureHysteresis}")
-            
-            # add margin to allow fridge cool down after heater switches off
-            margin = 0.9 # degC
-            
-            # keep the fridge running even if we we are below the control temperature
-            if temp > self.controlTemperature - self.temperatureHysteresis and temp < self.controlTemperature:
-                self.switch_on(mqtt_interface)
-                # print("Switching on, keep histeresis going.")
-            # switch off, as we have reached the control temperature + the hysteresis
-            elif temp < self.controlTemperature - self.temperatureHysteresis:
+
+            if temp <= self.controlTemperature:
                 self.switch_off(mqtt_interface)
                 # print("Switching off")
-            # switchon, to cool down the system + margin for heater delay. (system might cool down without the frdige, beta testing)
-            elif temp > self.controlTemperature + margin:
+            elif temp <= self.controlTemperature+self.temperatureHysteresis+self.additionalTemperatureMargin:
+                self.switch_on(mqtt_interface)
+                # print("keep on")
+            elif temp >= self.controlTemperature+self.temperatureHysteresis+self.additionalTemperatureMargin:
                 self.switch_on(mqtt_interface)
                 # print("Switching on")
             else:
-                print("Not supposed to happen!!!")
+                print("WARNING: FRIDGE CONTROLLER UNHANDLED CASE (SWITCH OFF)")
+            
+       
         
     def get_current_temp(self):
 

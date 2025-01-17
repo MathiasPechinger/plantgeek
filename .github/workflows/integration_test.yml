@@ -28,3 +28,8 @@ jobs:
         source venv/bin/activate
         ./tests/integration_test_zigbee.sh
 
+    - name: Run controller tests
+      run: |
+        source venv/bin/activate
+        ./tests/test_controllers.sh
+
