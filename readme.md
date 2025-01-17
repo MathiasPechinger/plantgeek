@@ -92,7 +92,7 @@ Clone the repository:
 ```bash
 mkdir plantgeek
 cd plantgeek
-git clone https://github.com/MathiasPechinger/plantgeek.git .
+git clone -b v1.0.0 https://github.com/MathiasPechinger/plantgeek.git .
 ```
 
 Set up the system (this takes about 7-8 minutes on a Raspberry Pi 5):
