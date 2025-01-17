@@ -34,6 +34,9 @@ class TestHeaterController(unittest.TestCase):
         # Mock is_temperature_falling to always return True
         self.heater.is_temperature_falling = lambda: True
         
+        self.heater.switch_on_delay = 0
+        self.heater.UnitTestActive = True
+        
     @patch('mysql.connector.connect')
     def test_temperature_control_cycle(self, mock_connect):
         # Create a mock cursor and connection

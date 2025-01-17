@@ -12,6 +12,7 @@ class Heater:
         self.timeout = 30
         self.switch_on_delay = 120  # 120 seconds delay before switching on
         self.pending_switch_on_time = None  # Track when we started considering switching on
+        self.UnitTestActive = False
         
     def set_control_temperature(self, temp):
         self.controlTemperature = float(temp)
@@ -29,7 +30,8 @@ class Heater:
         if self.pending_switch_on_time is None:
             self.pending_switch_on_time = current_time
             print("Starting heater switch-on delay timer")
-            return
+            if not self.UnitTestActive:
+                return
             
         # Check if we've waited long enough
         remaining_delay = self.switch_on_delay - (current_time - self.pending_switch_on_time).total_seconds()

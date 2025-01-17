@@ -40,6 +40,7 @@ class TestFridgeController(unittest.TestCase):
         self.fridge.set_temperature_hysteresis(0.5)      # Hysteresis
         self.fridge.set_control_mode(ControlMode.TEMPERATURE_CONTROL) 
         self.fridge.set_timeout(3)
+        self.fridge.additionalTemperatureMargin = 0.5
 
     @patch('mysql.connector.connect')
     def test_temperature_control_cycle(self, mock_connect):

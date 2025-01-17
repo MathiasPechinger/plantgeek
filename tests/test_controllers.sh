@@ -13,7 +13,7 @@ fi
 
 # Run the Python tests
 echo "Running fridge controller temperature tests..."
-python3 -m pytest tests/test_fridge_controller_temperetaure_day.py -v
+python3 -m pytest tests/test_fridge_controller_temp_day.py -v
 
 
 echo "Running test_heater_controller tests..."
