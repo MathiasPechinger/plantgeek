@@ -158,5 +158,26 @@ class TestHeaterController(unittest.TestCase):
             else:
                 time.sleep(0.1)  # Normal delay between tests
 
+    def test_required_attributes_exist(self):
+        """Test that all required attributes are initialized in __init__"""
+        required_attributes = [
+            'is_on',
+            'off_time',
+            'db_config',
+            'controlTemperature',
+            'hysteresis',
+            'timeout',
+            'switch_on_delay',
+            'pending_switch_on_time',
+            'UnitTestActive',
+            'falling_temp_threshold'
+        ]
+        
+        for attr in required_attributes:
+            self.assertTrue(
+                hasattr(self.heater, attr),
+                f"Heater class is missing required attribute: {attr}"
+            )
+
 if __name__ == '__main__':
     unittest.main() 

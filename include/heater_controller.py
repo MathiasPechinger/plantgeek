@@ -13,6 +13,7 @@ class Heater:
         self.switch_on_delay = 120  # 120 seconds delay before switching on
         self.pending_switch_on_time = None  # Track when we started considering switching on
         self.UnitTestActive = False
+        self.falling_temp_threshold = 0.05 # 0.05°C/min
         
     def set_control_temperature(self, temp):
         self.controlTemperature = float(temp)
@@ -147,7 +148,7 @@ class Heater:
         print(f"Temperature trend: {temp_diff:+.2f}°C over last {minutes} minutes "
               f"(from {first_temp:.1f}°C to {last_temp:.1f}°C)")
         
-        print(f"deltat needed: {self.falling_temp_threshold * minutes}")
+        print(f"delta needed: {self.falling_temp_threshold * minutes}")
         
         # Return True if temperature has decreased by at least the threshold
         return temp_diff < -self.falling_temp_threshold * minutes
