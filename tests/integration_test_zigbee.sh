@@ -6,7 +6,7 @@ mkdir -p logs
 # Start the main application in the background
 echo "Starting main application..."
 source venv/bin/activate
-TESTING=1 python app.py > logs/app.log 2>&1 &
+TESTING=1 python app.py --no-camera > logs/app.log 2>&1 &
 APP_PID=$!
 
 # Wait for app to initialize
