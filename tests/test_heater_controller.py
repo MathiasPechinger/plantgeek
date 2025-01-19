@@ -30,11 +30,13 @@ class TestHeaterController(unittest.TestCase):
         # Set control parameters
         self.heater.set_control_temperature(24.5)  # Target temperature
         self.heater.set_hysteresis(0.5)           # Hysteresis
+        self.heater.switch_on_delay_time = 0
         
         # Mock is_temperature_falling to always return True
         self.heater.is_temperature_falling = lambda: True
         
-        self.heater.switch_on_delay = 0
+        # Mock switch_on_delay to always return False (no delay)
+        self.heater.switch_on_delay = lambda: False
         self.heater.UnitTestActive = True
         
     @patch('mysql.connector.connect')
