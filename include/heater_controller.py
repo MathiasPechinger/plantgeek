@@ -11,7 +11,6 @@ class Heater:
         self.hysteresis = 0.5
         self.timeout = 30
         self.switch_on_delay = 120  # 120 seconds delay before switching on
-        self.pending_switch_on_time = None  # Track when we started considering switching on
         self.UnitTestActive = False
         self.falling_temp_threshold = 0.05 # 0.05°C/min
         
@@ -27,37 +26,34 @@ class Heater:
     def switch_on(self, mqtt_interface):
         current_time = datetime.datetime.now()
         
-        # Check if we're in the initial consideration period
-        if self.pending_switch_on_time is None:
-            self.pending_switch_on_time = current_time
-            print("Starting heater switch-on delay timer")
-            if not self.UnitTestActive:
+        # CHECK SWITCH ON ALLOWED
+        # Check if we are allowed to switch on (off_time is not none)
+        if self.off_time is not None: 
+            remaining_delay = self.switch_on_delay - (current_time - self.off_time).total_seconds()
+            if remaining_delay > 0:
+                print(f"Waiting {remaining_delay:.1f} seconds before considering heater switch-on")
                 return
-            
-        # Check if we've waited long enough
-        remaining_delay = self.switch_on_delay - (current_time - self.pending_switch_on_time).total_seconds()
-        if remaining_delay > 0:
-            print(f"Waiting {remaining_delay:.1f} seconds before considering heater switch-on")
-            return
-            
-        # Reset pending switch on time
-        self.pending_switch_on_time = None
-        print("Switch-on delay completed, checking other conditions...")
-        
-        # Normal timeout check
-        if self.off_time is None or (current_time - self.off_time).total_seconds() >= self.timeout:
-            success = mqtt_interface.setHeaterState(True)        
-            if success:
-                self.is_on = True
-                print("Heater switched ON")
+            else:
+                # Reset pending switch on time
+                self.off_time = None
+                print("Switch-on delay completed")
         else:
-            remaining_time = self.timeout - (current_time - self.off_time).total_seconds()
-            print(f"Heater cannot be switched on again. It was turned off for less than {self.timeout} seconds.")
-            print(f"Please wait for {remaining_time:.1f} seconds before switching on again.")
+            print("Switch-on delay notActive")
+
+        # SWITCH ON        
+        success = mqtt_interface.setHeaterState(True)        
+        if success:
+            self.is_on = True
+            print("Heater switched ON")
             
     def switch_off(self, mqtt_interface):
-        self.off_time = datetime.datetime.now()
-        self.pending_switch_on_time = None  # Reset pending switch on time
+        
+        current_time = datetime.datetime.now()
+        
+        # Check if we're in the initial consideration period
+        if self.off_time is None:
+            self.off_time = current_time
+            print("Starting heater switch-on delay timer")
         
         success = mqtt_interface.setHeaterState(False)        
         if success:
