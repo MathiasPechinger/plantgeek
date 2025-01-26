@@ -38,14 +38,22 @@ class Light:
     def check_time_and_control_light(self, sc, mqtt_interface):
         try:
             current_time = datetime.datetime.now().time()
-            if self.light_on_time <= current_time <= self.light_off_time:
+            # print(f"Checking light state on={self.lightState} from {self.light_on_time} to {self.light_off_time} with time {current_time}")
+            if self.is_time_between(self.light_on_time, self.light_off_time, current_time):
                 self.turn_light_on(mqtt_interface)
             else:
                 self.turn_light_off(mqtt_interface)
             sc.enter(1, 1, self.check_time_and_control_light, (sc,mqtt_interface,))
         except Exception as e:
             print(f"An error occurred: {str(e)}")
-        
+
+    def is_time_between(self, start_time:datetime.time, end_time:datetime.time, current_time:datetime.time=None):
+        current_time = current_time or datetime.datetime.now().time()
+        if start_time < end_time:
+            return start_time <= current_time <= end_time
+        else:  # Time window over midnight
+            return current_time >= start_time or current_time <= end_time
+
     def set_light_on_time(self, on_time):
         self.light_on_time = on_time
         
