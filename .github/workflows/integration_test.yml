@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - dev-issue-detection
-      - dev-temperature-control
+      - dev-lamp-control
 
 jobs:
   test:
