@@ -151,31 +151,58 @@ class Heater:
         print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
         # Only use the heater if the temperature is falling (the lamp also produces heat -> energy saving)
 
-        
-        # SWITCH ON LOGIC
-        if mqtt_interface.getHeaterState() == False:
-            if temp < self.controlTemperature and self.is_temperature_falling():
-                if not self.switch_on_delay():  # Only switch on if delay is complete
+        isLampActive = mqtt_interface.getLightState()    
+        if isLampActive:         
+            # SWITCH ON LOGIC
+            if mqtt_interface.getHeaterState() == False:
+                if temp < self.controlTemperature and self.is_temperature_falling():
+                    if not self.switch_on_delay():  # Only switch on if delay is complete
+                        self.switch_on(mqtt_interface)
+            
+            # SWITCH OFF LOGIC
+            if mqtt_interface.getHeaterState() == True:
+                # check if we are in the historysis range            
+                # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
+                if temp < self.controlTemperature + self.hysteresis and temp >= self.controlTemperature:
                     self.switch_on(mqtt_interface)
-        
-        # SWITCH OFF LOGIC
-        if mqtt_interface.getHeaterState() == True:
-            # check if we are in the historysis range            
-            # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
-            if temp < self.controlTemperature + self.hysteresis and temp >= self.controlTemperature:
-                self.switch_on(mqtt_interface)
-                # print("Switching on, keep histeresis going.")
-            elif temp >= self.controlTemperature + self.hysteresis:
-                self.switch_off(mqtt_interface)
-                # print("Switching off")
-            elif self.is_temperature_rising_faster_than(0.2):
-                self.switch_off(mqtt_interface)
-                print("Switching off, temperature rising faster than 0.2°C/min, heater propably not needed")
-            elif temp <= self.controlTemperature:
-                self.switch_on(mqtt_interface)
-                # print("Switching on")
-            else:
-                print("Not supposed to happen!!!")
+                    # print("Switching on, keep histeresis going.")
+                elif temp >= self.controlTemperature + self.hysteresis:
+                    self.switch_off(mqtt_interface)
+                    # print("Switching off")
+                elif self.is_temperature_rising_faster_than(0.2):
+                    self.switch_off(mqtt_interface)
+                    print("Switching off, temperature rising faster than 0.2°C/min, heater propably not needed")
+                elif temp <= self.controlTemperature:
+                    self.switch_on(mqtt_interface)
+                    # print("Switching on")
+                else:
+                    print("Not supposed to happen!")
+                    
+                    
+        # if the lamp is not active we do not use the temperature rising/falling detection. Simply heat if it is below the control temperature.       
+        else: # lamp is not active
+            
+             # SWITCH ON LOGIC
+            if mqtt_interface.getHeaterState() == False:
+                if temp < self.controlTemperature:
+                    if not self.switch_on_delay():  # Only switch on if delay is complete
+                        self.switch_on(mqtt_interface)
+            
+            # SWITCH OFF LOGIC
+            if mqtt_interface.getHeaterState() == True:
+                # check if we are in the historysis range            
+                # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
+                if temp < self.controlTemperature + self.hysteresis and temp >= self.controlTemperature:
+                    self.switch_on(mqtt_interface)
+                    # print("Switching on, keep histeresis going.")
+                elif temp >= self.controlTemperature + self.hysteresis:
+                    self.switch_off(mqtt_interface)
+                    # print("Switching off")
+                elif temp <= self.controlTemperature:
+                    self.switch_on(mqtt_interface)
+                    # print("Switching on")
+                else:
+                    print("Not supposed to happen!")
                     
             
         sc.enter(5, 1, self.control_heater, (sc,mqtt_interface,))

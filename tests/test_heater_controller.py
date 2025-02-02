@@ -39,6 +39,8 @@ class TestHeaterController(unittest.TestCase):
         self.heater.switch_on_delay = lambda: False
         self.heater.UnitTestActive = True
         
+        self.mqtt.getLightState = lambda: True
+        
     @patch('mysql.connector.connect')
     def test_temperature_control_cycle(self, mock_connect):
         # Create a mock cursor and connection
