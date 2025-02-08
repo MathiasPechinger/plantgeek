@@ -32,7 +32,7 @@ faulthandler.enable()
 
 
 CONFIG_FILE = 'config/config.json'
-
+DEVICE_CONFIG_FILE = 'config/device_setup.json'
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -533,10 +533,13 @@ def switchPowerSocket():
 
 @app.route('/getZigbeeDevices', methods=['POST'])
 def getZigbeeDevices():
-    devices = mqtt_interface.getDevices()
-    device_list = [str(device) for device in devices]
-    return jsonify(device_list)
-    # return jsonify(mqtt_interface.getDevices())
+    discovered_devices = mqtt_interface.getDiscoveredDevices()
+    # Return friendly names and availability status
+    device_info = [{
+        'friendly_name': device['friendly_name'],
+        'availability': True # TODO: check availability, guessing discovered devices are always available
+    } for device in discovered_devices]
+    return jsonify(device_info)
 
 @app.route('/removeZigbeeDevice', methods=['POST'])
 def removeZigbeeDevice():
@@ -762,5 +765,61 @@ if __name__ == '__main__':
         scheduler_health_reporting.enter(2, 1, plantGeekBackend.sendHealthErrorsToBackend, (scheduler_health_reporting, systemHealth,))
         health_reporting_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_reporting,))
         health_reporting_thread.start()
+
+    @app.route('/getDeviceConfig')
+    def get_device_config():
+        try:
+            # Get the directory where the main config file is located
+            config_dir = os.path.dirname(DEVICE_CONFIG_FILE)
+            # Construct path to device setup config
+            config_path = os.path.join(config_dir, 'device_setup.json')
+            
+            if not os.path.exists(config_path):
+                print(f"Config file not found at: {config_path}")  # Debug print
+                return jsonify({'error': 'Config file not found'}), 404
+            
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                return jsonify(config)
+            
+        except Exception as e:
+            print(f"Error reading device config: {e}")  # Debug print
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/saveDeviceAssignment', methods=['POST'])
+    def save_device_assignment():
+        data = request.json
+        friendly_name = data.get('friendly_name')
+        device_type = data.get('device_type')
+        
+        try:
+            config_dir = os.path.dirname(DEVICE_CONFIG_FILE)
+            config_path = os.path.join(config_dir, 'device_setup.json')
+            
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                
+            # Remove existing assignment if any
+            for device_type_key in list(config['devices'].keys()):
+                if config['devices'][device_type_key]['friendly_name'] == friendly_name:
+                    del config['devices'][device_type_key]
+            
+            # Add new assignment if device_type is not empty
+            if device_type:
+                config['devices'][device_type] = {
+                    'friendly_name': friendly_name,
+                    'description': f"{device_type.lower()} socket"
+                }
+                
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=4)
+            
+            # Reload MQTT interface device configuration
+            mqtt_interface.reload_device_config()
+            
+            return jsonify({'success': True})
+        except Exception as e:
+            print(f"Error saving device assignment: {e}")
+            return jsonify({'success': False, 'error': str(e)})
 
     app.run(debug=False, host='0.0.0.0')

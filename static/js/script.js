@@ -1,4 +1,8 @@
 let activeIntervals = {};
+let intervals = {};
+
+// Single global interval variable
+let zigbeeRefreshInterval = null;
 
 function initializeTab(tabId) {
     stopAllIntervals();
@@ -100,9 +104,19 @@ function startStreamInterval() {
 }
 
 function startZigbeeInterval() {
-    activeIntervals.zigbee = [];
-    getZigbeeDevices();
-    activeIntervals.zigbee.push(setInterval(getZigbeeDevices, 3000));
+    if (!zigbeeRefreshInterval) {
+        getZigbeeDevices(); // Initial call
+        zigbeeRefreshInterval = setInterval(getZigbeeDevices, 3000);
+        console.log('Started zigbee refresh interval');
+    }
+}
+
+function stopZigbeeInterval() {
+    if (zigbeeRefreshInterval) {
+        clearInterval(zigbeeRefreshInterval);
+        zigbeeRefreshInterval = null;
+        console.log('Stopped zigbee refresh interval');
+    }
 }
 
 function startEnvironmentInterval() {
@@ -210,18 +224,6 @@ function setLightTimes() {
     .then(data => console.log(data));
 }
 
-// function setFanSpeed(speed) {
-//     fetch('/set-fan-speed', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({ speed })
-//     })
-//     .then(response => response.json())
-//     .then(data => console.log(data))
-//     .catch(error => console.error('Error:', error));
-// }
 
 function sendToggleStatus(toggleId, toggleValue) {
     // Update the visibility of the associated div
@@ -614,39 +616,6 @@ function updateChart(chart, data) {
 }
 
 
-
-// Function to create dynamic list items for state.json data
-function createStateList(data) {
-    const listContainer = document.getElementById('dynamic-list');
-    listContainer.innerHTML = ''; // Clear any existing items
-    // todo: this just be dynamic or not?
-    const deviceMap = {
-        light: 'Light',
-        fridge: 'Fridge',
-        co2: 'CO2 Valve',
-        heater: 'Heater'
-    };
-    const usedDevices = Object.keys(deviceMap);
-    for (const [deviceId, deviceData] of Object.entries(data)) {
-        if (usedDevices.includes(deviceId)) {
-            const listItem = document.createElement('li');
-            listItem.className = 'list-group-item';
-            const deviceName = deviceMap[deviceId];
-            listItem.textContent = `ID: ${deviceId}, Device: ${deviceName}, State: ${deviceData.state}, Voltage: ${deviceData.voltage}, Power: ${deviceData.power}`;
-            listContainer.appendChild(listItem);
-            usedDevices.splice(usedDevices.indexOf(deviceId), 1);
-        }
-    }
-    usedDevices.forEach(deviceId => {
-        const listItem = document.createElement('li');
-        listItem.className = 'list-group-item';
-        const deviceName = deviceMap[deviceId];
-        listItem.textContent = `ID: ${deviceId}, Device: ${deviceName}, State: Unused`;
-        listContainer.appendChild(listItem);
-    });
-}
-
-
 function getZigbeeDevices() {
     $.ajax({
         url: '/getZigbeeDevices',
@@ -667,68 +636,174 @@ function getZigbeeDevices() {
 // Function to create dynamic list items for JSON data
 function createDatabaseList(data) {
     const listContainer = document.getElementById('dynamic-list');
-    listContainer.innerHTML = ''; // Clear any existing items
-
-
-    const deviceMap = {
-        0: 'unused',
-        1: 'Light',
-        2: 'Fridge',
-        3: 'CO2 Valve',
-        4: 'Heater'
-    };
-
-    deviceCounter = 1;
-
-    for (const [deviceId, deviceData] of Object.entries(data)) {
-        deviceCounter++;
-        deviceMapID = deviceCounter - 1;
-
-        if (deviceCounter > 5) {
-            deviceMapID = 0; // unused extra devices
-        }
-
-        const deviceInfo = deviceData.split(', ');
-        const deviceId = deviceInfo[0].split(': ')[1];
-        const availability = deviceInfo[1].split(': ')[1];
-
-        if (availability === 'True') {
-            const deviceType = deviceMap[deviceMapID];
-            const listItem = document.createElement('li');
-            listItem.className = 'list-group-item';
-            listItem.textContent = `${deviceType} socket `;
-            
-            const buttonOn = document.createElement('button');
-            buttonOn.className = 'btn btn-success';
-            buttonOn.textContent = 'on';
-            buttonOn.addEventListener('click', () => {
-                switchPowerSocket(true, deviceId);
-            });
-            listItem.appendChild(buttonOn);
-
-            const buttonOff = document.createElement('button');
-            buttonOff.className = 'btn btn-danger';
-            buttonOff.textContent = 'off';
-            buttonOff.addEventListener('click', () => {
-                switchPowerSocket(false, deviceId);
-            });
-            listItem.appendChild(buttonOff);
-
-            const buttonRemove = document.createElement('button');
-            buttonRemove.className = 'btn btn-warning';
-            buttonRemove.textContent = 'remove';
-            buttonRemove.addEventListener('click', () => {
-                const confirmRemove = confirm('Are you sure you want to remove this device?');
-                if (confirmRemove) {
-                    removeZigbeeDevice(deviceId);
-                }
-            });
-            listItem.appendChild(buttonRemove);
-            
-            listContainer.appendChild(listItem);
+    listContainer.innerHTML = '';
     
+    fetch('/getDeviceConfig')
+        .then(response => response.json())
+        .then(config => {
+            data.forEach((device, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+                
+                // Create a container for vertical stacking
+                const contentContainer = document.createElement('div');
+                contentContainer.className = 'd-flex flex-column gap-2';
+                
+                // Top row: Device name and status
+                const topRow = document.createElement('div');
+                topRow.className = 'd-flex align-items-center';
+                
+                const availabilityBadge = document.createElement('span');
+                availabilityBadge.className = `badge ${device.availability ? 'bg-success' : 'bg-danger'} me-2`;
+                availabilityBadge.textContent = device.availability ? 'Online' : 'Offline';
+                topRow.appendChild(availabilityBadge);
+                
+                const deviceText = document.createElement('span');
+                deviceText.textContent = device.friendly_name;
+                deviceText.className = 'flex-grow-1';
+                topRow.appendChild(deviceText);
+                
+                // Middle row: Device type assignment
+                const middleRow = document.createElement('div');
+                middleRow.className = 'd-flex align-items-center gap-2 mt-2';
+                
+                const deviceTypeLabel = document.createElement('span');
+                const currentAssignment = getDeviceAssignment(config, device.friendly_name);
+                deviceTypeLabel.textContent = `Type: ${currentAssignment || 'Unassigned'}`;
+                deviceTypeLabel.className = 'me-2';
+                middleRow.appendChild(deviceTypeLabel);
+                
+                const deviceTypeSelect = document.createElement('select');
+                deviceTypeSelect.className = 'form-select form-select-sm w-auto';
+                deviceTypeSelect.innerHTML = `
+                    <option value="">Select type...</option>
+                    <option value="LIGHT">Light</option>
+                    <option value="FRIDGE">Fridge</option>
+                    <option value="CO2">CO2</option>
+                    <option value="HEATER">Heater</option>
+                `;
+                deviceTypeSelect.value = currentAssignment || '';
+                middleRow.appendChild(deviceTypeSelect);
+                
+                // Bottom row: Control buttons
+                const bottomRow = document.createElement('div');
+                bottomRow.className = 'd-flex justify-content-left mt-2';
+                
+                if (device.availability) {
+                    const buttonGroup = document.createElement('div');
+                    buttonGroup.className = 'btn-group';
+                    
+                    const buttonOn = document.createElement('button');
+                    buttonOn.className = 'btn btn-success btn-sm';
+                    buttonOn.textContent = 'on';
+                    buttonOn.addEventListener('click', () => {
+                        switchPowerSocket(true, device.friendly_name);
+                    });
+                    buttonGroup.appendChild(buttonOn);
+
+                    const buttonOff = document.createElement('button');
+                    buttonOff.className = 'btn btn-danger btn-sm';
+                    buttonOff.textContent = 'off';
+                    buttonOff.addEventListener('click', () => {
+                        switchPowerSocket(false, device.friendly_name);
+                    });
+                    buttonGroup.appendChild(buttonOff);
+                    
+                    bottomRow.appendChild(buttonGroup);
+                }
+                
+                // Append all rows to container
+                contentContainer.appendChild(topRow);
+                contentContainer.appendChild(middleRow);
+                contentContainer.appendChild(bottomRow);
+                
+                // Append container to list item
+                listItem.appendChild(contentContainer);
+                listContainer.appendChild(listItem);
+                
+                // Add event listeners (same as before)
+                deviceTypeSelect.addEventListener('focus', () => {
+                    console.log('Stopping interval for dropdown interaction');
+                    stopZigbeeInterval();
+                });
+
+                deviceTypeSelect.addEventListener('change', () => {
+                    const saveButton = document.createElement('button');
+                    saveButton.className = 'btn btn-primary btn-sm ms-2';
+                    saveButton.textContent = 'Save';
+                    saveButton.onclick = () => {
+                        saveDeviceAssignment(device.friendly_name, deviceTypeSelect.value)
+                            .then(() => {
+                                console.log('Restarting interval after save');
+                                startZigbeeInterval();
+                            });
+                    };
+                    middleRow.appendChild(saveButton);
+                });
+
+                // Add cancel button
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'btn btn-secondary btn-sm ms-2';
+                cancelButton.textContent = 'Cancel';
+                cancelButton.style.display = 'none';
+                cancelButton.onclick = () => {
+                    deviceTypeSelect.value = currentAssignment || '';
+                    cancelButton.style.display = 'none';
+                    if (middleRow.contains(saveButton)) {
+                        saveButton.remove();
+                    }
+                    console.log('Restarting interval after cancel');
+                    startZigbeeInterval();
+                };
+                middleRow.appendChild(cancelButton);
+
+                deviceTypeSelect.addEventListener('change', () => {
+                    cancelButton.style.display = 'inline-block';
+                });
+
+                // Add blur event to handle clicking outside
+                deviceTypeSelect.addEventListener('blur', (event) => {
+                    // Only restart if not clicking save or cancel
+                    if (!event.relatedTarget || 
+                        (event.relatedTarget.tagName !== 'BUTTON' && 
+                         !event.relatedTarget.classList.contains('btn'))) {
+                        console.log('Restarting interval after blur');
+                        startZigbeeInterval();
+                    }
+                });
+            });
+        });
+}
+
+function getDeviceAssignment(config, friendlyName) {
+    for (const [deviceType, deviceInfo] of Object.entries(config.devices)) {
+        if (deviceInfo.friendly_name === friendlyName) {
+            return deviceType;
         }
     }
+    return null;
+}
+
+function saveDeviceAssignment(friendlyName, deviceType) {
+    return fetch('/saveDeviceAssignment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            friendly_name: friendlyName,
+            device_type: deviceType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Device assignment saved successfully!', true);
+        } else {
+            showNotification('Error saving device assignment', false);
+        }
+        return data;
+    });
 }
 
 function setPowerSocketOverrideToggle(rate, ieeeAddr) {
@@ -961,8 +1036,9 @@ function startIntervals(toggleId) {
             return;
     }
 
+    // Execute and store intervals
     intervalConfigs.forEach(config => {
-        config.func();  // Execute the function immediately
+        config.func();  // Execute immediately
         const intervalId = setInterval(config.func, config.timeStep);
         intervals[toggleId].push(intervalId);
     });
@@ -971,7 +1047,7 @@ function startIntervals(toggleId) {
 function stopIntervals(toggleId) {
     if (intervals[toggleId]) {
         intervals[toggleId].forEach(intervalId => clearInterval(intervalId));
-        intervals[toggleId] = null;
+        intervals[toggleId] = [];  // Clear the array but keep the key
     }
 }
 

@@ -148,7 +148,7 @@ class Heater:
             sc.enter(5, 1, self.control_heater, (sc,mqtt_interface,))
             return
 
-        print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
+        # print(f"temp: {temp}, control temp: {self.controlTemperature}, hysteresis: {self.hysteresis}")
         # Only use the heater if the temperature is falling (the lamp also produces heat -> energy saving)
 
         isLampActive = mqtt_interface.getLightState()    
