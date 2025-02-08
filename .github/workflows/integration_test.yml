@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - dev-lamp-control
+      - dev-zigbee-address-assignment 
 
 jobs:
   test:
