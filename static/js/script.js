@@ -689,28 +689,26 @@ function createDatabaseList(data) {
                 const bottomRow = document.createElement('div');
                 bottomRow.className = 'd-flex justify-content-left mt-2';
                 
-                if (device.availability) {
-                    const buttonGroup = document.createElement('div');
-                    buttonGroup.className = 'btn-group';
-                    
-                    const buttonOn = document.createElement('button');
-                    buttonOn.className = 'btn btn-success btn-sm';
-                    buttonOn.textContent = 'on';
-                    buttonOn.addEventListener('click', () => {
-                        switchPowerSocket(true, device.friendly_name);
-                    });
-                    buttonGroup.appendChild(buttonOn);
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'btn-group';
+                
+                const buttonOn = document.createElement('button');
+                buttonOn.className = 'btn btn-success btn-sm';
+                buttonOn.textContent = 'on';
+                buttonOn.addEventListener('click', () => {
+                    switchPowerSocket(true, device.friendly_name);
+                });
+                buttonGroup.appendChild(buttonOn);
 
-                    const buttonOff = document.createElement('button');
-                    buttonOff.className = 'btn btn-danger btn-sm';
-                    buttonOff.textContent = 'off';
-                    buttonOff.addEventListener('click', () => {
-                        switchPowerSocket(false, device.friendly_name);
-                    });
-                    buttonGroup.appendChild(buttonOff);
-                    
-                    bottomRow.appendChild(buttonGroup);
-                }
+                const buttonOff = document.createElement('button');
+                buttonOff.className = 'btn btn-danger btn-sm';
+                buttonOff.textContent = 'off';
+                buttonOff.addEventListener('click', () => {
+                    switchPowerSocket(false, device.friendly_name);
+                });
+                buttonGroup.appendChild(buttonOff);
+                
+                bottomRow.appendChild(buttonGroup);
                 
                 // Append all rows to container
                 contentContainer.appendChild(topRow);

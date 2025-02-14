@@ -191,7 +191,6 @@ class MQTT_Interface:
                 current_time = time.time()
                 if device.internalLastSeen is not None:
                     timeDiffrence = current_time - device.internalLastSeen
-                    # print("Time diffrence: ", timeDiffrence)
                     if device.internalLastSeen is not None and timeDiffrence > TIMEOUT_THRESHOLD:
                         device.availability = False
                     else:
@@ -203,27 +202,6 @@ class MQTT_Interface:
                 # print("Device: ", device.friendly_name, "Availability: ", device.availability)
         return None
     
-    def setDeviceAutoOffCountdownSocketA1Z(self, friendly_name, countdown):
-        TOPIC = f"zigbee2mqtt/{friendly_name}/set"
-        payload = '{"countdown":' + countdown + '}'        
-        self.publish(TOPIC, payload)
-        return None
-    
-    def removeDevice(self, friendly_name):
-        print("trying_to_remove_device")
-        for device in self.devices:
-            if device.friendly_name == friendly_name:
-                device.friendly_name = ""
-                device.availability = False
-                device.state = False
-                device.internalLastSeen = None
-                device.manualOverrideTimer = 0
-                device.manualOverrideActive = False
-                TOPIC = "zigbee2mqtt/bridge/request/device/remove"
-                payload = '{"id":"' + friendly_name + '", "force": true}'
-                self.publish(TOPIC, payload)
-                return True
-        return False
     
     def updateBridgeHealth(self):
         for device in self.devices:
@@ -318,6 +296,7 @@ class MQTT_Interface:
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
         payload = '{"state": "ON"}'
         deviceFound = False
+        print("-------> switch_on")
         for device in self.devices:
             if device.friendly_name == ieee_address:
                 device.state = True
@@ -326,7 +305,8 @@ class MQTT_Interface:
                 self.client.publish(TOPIC, payload)
                 deviceFound = True
         if not deviceFound:
-            print("ERROR: Device not found")
+            self.client.publish(TOPIC, payload)
+            print("WARN: Device not assigned or not found")
 
     def switch_off(self, ieee_address):
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
@@ -340,7 +320,8 @@ class MQTT_Interface:
                 self.client.publish(TOPIC, payload)
                 deviceFound = True
         if not deviceFound:
-            print("ERROR: Device not found")
+            self.client.publish(TOPIC, payload)
+            print("WARN: Device not assigned or not found")
 
     def setFridgeState(self, state):
         if self.fridgeSocket.friendly_name == "":
