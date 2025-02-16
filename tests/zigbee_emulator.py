@@ -15,8 +15,6 @@ class ZigbeeEmulator:
         self.client.username_pw_set("mqtt", "mqtt")
         self.client.connect("localhost", 1883, 60)
         
-        print("MQTT client initialized")
-        
         self.device_to_fail = device_to_fail
         self.fail_after_seconds = fail_after_seconds
         self.start_time = time.time()

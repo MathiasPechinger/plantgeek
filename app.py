@@ -34,6 +34,7 @@ faulthandler.enable()
 CONFIG_FILE = 'config/config.json'
 DEVICE_CONFIG_FILE = 'config/device_setup.json'
 CI_TEST_CONFIG_FILE = 'tests/test_configs/device_setup.json'
+
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
     def filter(self, record):
