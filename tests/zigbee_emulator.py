@@ -7,9 +7,15 @@ import sys
 class ZigbeeEmulator:
     def __init__(self, device_to_fail=None, fail_after_seconds=3):
         # MQTT setup
-        self.client = mqtt.Client()
+        try:
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        except:
+            self.client = mqtt.Client()
+        
         self.client.username_pw_set("mqtt", "mqtt")
         self.client.connect("localhost", 1883, 60)
+        
+        print("MQTT client initialized")
         
         self.device_to_fail = device_to_fail
         self.fail_after_seconds = fail_after_seconds
@@ -19,7 +25,7 @@ class ZigbeeEmulator:
         self.devices = [
             {
                 "friendly_name": "light_socket",
-                "ieee_address": "0x00124b00250c256f",
+                "ieee_address": "0xf0d1b8be240845b1",
                 "type": "Router",
                 "state": "OFF",
                 "voltage": 230,
@@ -28,7 +34,7 @@ class ZigbeeEmulator:
             },
             {
                 "friendly_name": "fridge_socket",
-                "ieee_address": "0x00124b00250c257a",
+                "ieee_address": "0xf0d1b8be24085e85",
                 "type": "Router",
                 "state": "OFF",
                 "voltage": 230,
@@ -37,7 +43,7 @@ class ZigbeeEmulator:
             },
             {
                 "friendly_name": "co2_socket",
-                "ieee_address": "0x00124b00250c258b",
+                "ieee_address": "0xf0d1b8be24085c50",
                 "type": "Router",
                 "state": "OFF",
                 "voltage": 230,
@@ -46,7 +52,7 @@ class ZigbeeEmulator:
             },
             {
                 "friendly_name": "heater_socket",
-                "ieee_address": "0x00124b00250c259c",
+                "ieee_address": "0xf0d1b8be24084fb6",
                 "type": "Router",
                 "state": "OFF",
                 "voltage": 230,

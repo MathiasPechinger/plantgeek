@@ -33,7 +33,7 @@ faulthandler.enable()
 
 CONFIG_FILE = 'config/config.json'
 DEVICE_CONFIG_FILE = 'config/device_setup.json'
-
+CI_TEST_CONFIG_FILE = 'tests/test_configs/device_setup.json'
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
     def filter(self, record):
@@ -623,9 +623,11 @@ def start_sensor_data_logger():
 if __name__ == '__main__':
     # Add command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-camera', action='store_true', help='Disable camera functionality')
+    parser.add_argument('--ci-testing', action='store_true', help='Disable camera functionality, use test config file')
     args = parser.parse_args()
-    enable_camera = not args.no_camera
+    enable_camera = not args.ci_testing
+    if args.ci_testing:
+        DEVICE_CONFIG_FILE = CI_TEST_CONFIG_FILE
     
     # Load the JSON configuration file
     with open(CONFIG_FILE, 'r') as file:
