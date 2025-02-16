@@ -100,10 +100,8 @@ class MQTT_Interface:
                 payload = msg.payload.decode()
                 devices = json.loads(payload)
                 
-                # Clear existing discovered devices
-                self.discovered_devices = []
-                
                 # Store all non-coordinator devices
+                # Show all devices even if the are not available
                 for device in devices:
                     if device['type'] != 'Coordinator':
                         device_info = {
@@ -114,26 +112,15 @@ class MQTT_Interface:
                             'manufacturer': device.get('manufacturer', ''),
                             'description': device.get('description', '')
                         }
-                        self.discovered_devices.append(device_info)
+                        # append if friendly name is not already in list
+                        if device_info['friendly_name'] not in [d['friendly_name'] for d in self.discovered_devices]:
+                            self.discovered_devices.append(device_info) 
+
                         
                 # Verify that configured devices exist in discovered devices
                 self.verify_configured_devices()
                 
-            # Availability messages
-            if "availability" in msg.topic:
-                device_name = msg.topic.split('/')[1]
-                status = msg.payload.decode()
-                if status == "online":
-                    statusBool = True
-                else:
-                    statusBool = False
-                for device in self.devices:
-                    if device.friendly_name == device_name:
-                        # THIS DOES NOT WORK, I DONT KNOW WHY
-                        # THE MQTT BACKEND DOES NOT GIVE THE CORRECT AVAILABILITY STATUS
-                        # device.availability = statusBool
-                        # print(f"Device: {device.friendly_name}, Availability: {device.availability}")
-                        break
+
             else:
                 # process other messages
                 # my sockets do not attach the "/state" so i have to check for the device name
@@ -190,16 +177,17 @@ class MQTT_Interface:
             if device.friendly_name == friendly_name:
                 current_time = time.time()
                 if device.internalLastSeen is not None:
-                    timeDiffrence = current_time - device.internalLastSeen
-                    if device.internalLastSeen is not None and timeDiffrence > TIMEOUT_THRESHOLD:
-                        device.availability = False
-                    else:
-                        device.availability = True
-                    # print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                    time_difference = current_time - device.internalLastSeen
+                    device.availability = time_difference <= TIMEOUT_THRESHOLD
                 else:
                     device.availability = False
-                    
-                # print("Device: ", device.friendly_name, "Availability: ", device.availability)
+
+                # Update discovered device availability
+                for discovered_device in self.discovered_devices:
+                    if discovered_device['friendly_name'] == friendly_name:
+                        discovered_device['available'] = device.availability
+                        break
+
         return None
     
     
@@ -293,10 +281,17 @@ class MQTT_Interface:
             self.client.publish(TOPIC, payload)
 
     def switch_on(self, ieee_address):
+        
+        
+        on_time = "60"
+        off_wait_time = "10"
+        
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
-        payload = '{"state": "ON"}'
+        # payload = '{"state": "ON", "on_time": 10, "off_wait_time": 10}' #  on_time prevents sleeping error if system is not healthy
+        payload = '{"state": "ON", "on_time":' + on_time + ', "off_wait_time":' + off_wait_time + '}' #  on_time prevents sleeping error if system is not healthy
+       
+       
         deviceFound = False
-        print("-------> switch_on")
         for device in self.devices:
             if device.friendly_name == ieee_address:
                 device.state = True

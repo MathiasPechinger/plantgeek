@@ -537,7 +537,7 @@ def getZigbeeDevices():
     # Return friendly names and availability status
     device_info = [{
         'friendly_name': device['friendly_name'],
-        'availability': True # TODO: check availability, guessing discovered devices are always available
+        'availability': device['available'] 
     } for device in discovered_devices]
     return jsonify(device_info)
 
