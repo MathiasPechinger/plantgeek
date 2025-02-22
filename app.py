@@ -632,9 +632,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--ci-testing', action='store_true', help='Disable camera functionality, use test config file')
     args = parser.parse_args()
-    enable_camera = not args.ci_testing
-    if args.ci_testing:
+    enable_camera = True
+    if 'TESTING' in os.environ:
+        print("[TEST MODE ACTIVE THIS SHOULD ONLY BE USED IN CI TESTING!]")
         DEVICE_CONFIG_FILE = CI_TEST_CONFIG_FILE
+        enable_camera = False
     
     # Load the JSON configuration file
     with open(CONFIG_FILE, 'r') as file:

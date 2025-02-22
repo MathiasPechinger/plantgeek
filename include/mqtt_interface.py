@@ -425,7 +425,10 @@ class MQTT_Interface:
 
     def load_device_config(self):
         try:
-            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'device_setup.json')
+            if not 'TESTING' in os.environ:
+                config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'device_setup.json')
+            else:
+                config_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_configs', 'device_setup.json')
             with open(config_path, 'r') as f:
                 config = json.load(f)
                 return config['devices']
