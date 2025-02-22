@@ -95,6 +95,11 @@ cd plantgeek
 git clone https://github.com/MathiasPechinger/plantgeek.git .
 ```
 
+checkout latest release
+```
+git checkout v1.0.2
+```
+
 Set up the system (this takes about 7-8 minutes on a Raspberry Pi 5):
 ```bash
 ./setup.sh
