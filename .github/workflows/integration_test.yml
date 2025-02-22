@@ -11,7 +11,7 @@ jobs:
     runs-on: self-hosted
     steps:
     - name: Checkout code
-      uses: actions/checkout@dev-zigbee-address-assignment
+      uses: actions/checkout@v4
 
     - name: Run setup script with CI flag
       run: |
