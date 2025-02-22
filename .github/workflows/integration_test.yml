@@ -4,29 +4,35 @@ on:
   push:
     branches:
       - main
-      - dev-lamp-control
+      - dev-zigbee-address-assignment 
 
 jobs:
   test:
     runs-on: self-hosted
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Run setup script with CI flag
       run: |
         chmod +x setup.sh
         ./setup.sh --ci
 
-    - name: Run sensor error tests
+    - name: Run app execution test
       run: |
         source venv/bin/activate
-        ./tests/test_sensor_errors.sh
+        ./tests/test_app_py.sh
+
 
     - name: Run Zigbee integration tests
       run: |
         source venv/bin/activate
         ./tests/integration_test_zigbee.sh
+
+    - name: Run sensor error tests
+      run: |
+        source venv/bin/activate
+        ./tests/test_sensor_errors.sh
 
     - name: Run controller tests
       run: |

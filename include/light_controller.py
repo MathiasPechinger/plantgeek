@@ -1,4 +1,5 @@
 import datetime
+from gpiozero import PWMLED
 
 class Light:
 
@@ -7,7 +8,17 @@ class Light:
         self.db_config = db_config
         self.light_on_time = datetime.time(1, 0)
         self.light_off_time = datetime.time(2, 0)
-        
+        self.lampPower = 9
+        self.pwm_led = PWMLED(12) # This is software PWM, needs to changed to hardware pwm (not support in pi 5 librarires currently)
+        self.pwm_led.value = 1-(self.lampPower / 100)
+        self.pwm_led.frequency = 100
+
+    def set_brightness(self, brightness):
+        self.brightness = brightness
+
+    def set_lamp_power(self, lamp_power):
+        self.lampPower = lamp_power
+
     def turn_light_on(self,mqtt_interface):
         # The light must be set according to the auto off time in the mqtt interface
         # This is a safety function, otherwise it will automatically shut down

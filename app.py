@@ -24,6 +24,7 @@ from include.health_monitoring import HealthMonitor
 # from include.camera_recorder import CameraRecorder
 from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
+from include.humidifier_controller import Humidifier
 
 import faulthandler
 import argparse
@@ -32,7 +33,8 @@ faulthandler.enable()
 
 
 CONFIG_FILE = 'config/config.json'
-
+DEVICE_CONFIG_FILE = 'config/device_setup.json'
+CI_TEST_CONFIG_FILE = 'tests/test_configs/device_setup.json'
 
 # Custom logging filter to exclude unwanted log messages
 class ExcludeLogsFilter(logging.Filter):
@@ -135,7 +137,9 @@ def initConfigOnStartup():
     fridge.set_temperature_hysteresis(config['TemperatureControl']['hysteresis'])
     
     fridge.set_control_humidity(config['HumidityControl']['targetHumidity'])
+    humidifier.set_control_humidity(config['HumidityControl']['targetHumidity'])
     fridge.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+    humidifier.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
     if 'FridgeControl' in config and 'controlMode' in config['FridgeControl']:
         fridge.set_control_mode(ControlMode[config['FridgeControl']['controlMode']])
     
@@ -195,10 +199,13 @@ def save_config():
     if 'target_humidity' in data:
         config['HumidityControl']['targetHumidity'] = data['target_humidity']
         fridge.set_control_humidity(data['target_humidity'])
+        humidifier.set_control_humidity(config['HumidityControl']['targetHumidity'])
     
     if 'humidity_hysteresis' in data:
         config['HumidityControl']['hysteresis'] = data['humidity_hysteresis']
         fridge.set_humidity_hysteresis(data['humidity_hysteresis'])
+        humidifier.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+
 
     # Save the updated configuration back to the file
     with open(CONFIG_FILE, 'w') as config_file:
@@ -533,10 +540,13 @@ def switchPowerSocket():
 
 @app.route('/getZigbeeDevices', methods=['POST'])
 def getZigbeeDevices():
-    devices = mqtt_interface.getDevices()
-    device_list = [str(device) for device in devices]
-    return jsonify(device_list)
-    # return jsonify(mqtt_interface.getDevices())
+    discovered_devices = mqtt_interface.getDiscoveredDevices()
+    # Return friendly names and availability status
+    device_info = [{
+        'friendly_name': device['friendly_name'],
+        'availability': device['available'] 
+    } for device in discovered_devices]
+    return jsonify(device_info)
 
 @app.route('/removeZigbeeDevice', methods=['POST'])
 def removeZigbeeDevice():
@@ -620,9 +630,13 @@ def start_sensor_data_logger():
 if __name__ == '__main__':
     # Add command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-camera', action='store_true', help='Disable camera functionality')
+    parser.add_argument('--ci-testing', action='store_true', help='Disable camera functionality, use test config file')
     args = parser.parse_args()
-    enable_camera = not args.no_camera
+    enable_camera = True
+    if 'TESTING' in os.environ:
+        print("[TEST MODE ACTIVE THIS SHOULD ONLY BE USED IN CI TESTING!]")
+        DEVICE_CONFIG_FILE = CI_TEST_CONFIG_FILE
+        enable_camera = False
     
     # Load the JSON configuration file
     with open(CONFIG_FILE, 'r') as file:
@@ -632,22 +646,6 @@ if __name__ == '__main__':
     plantGeekBackendInUse = config['PlanGeekBackend']['plantGeekBackendInUse']
     activateCO2control = config['CO2Control']['activateCO2control']
     activateMQTTinterface = config['MQTTInterface']['activateMQTTinterface']
-    
-    # Print the values to verify
-    # print(f"Plant Geek Backend In Use: {plantGeekBackendInUse}")
-    # print(f"Activate CO2 Control: {activateCO2control}")
-    # print(f"Activate MQTT Interface: {activateMQTTinterface}")
-        
-    # # Using PlanGeekBackend
-    # plantGeekBackendInUse = True
-    
-    # # Using CO2 control
-    # activateCO2control = True
-    
-    # # Using MQTT interface
-    # activateMQTTinterface = True
-        
-        
 
     scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
@@ -679,6 +677,12 @@ if __name__ == '__main__':
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
     light = Light(db_config)
+    
+    activateHumidifier = True
+    
+    if activateHumidifier:
+        humidifier = Humidifier(db_config)
+        
     if activateCO2control:
         co2 = CO2()
 
@@ -708,6 +712,13 @@ if __name__ == '__main__':
     if enable_camera:
         scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
 
+    if activateHumidifier:
+        print("activating humidifier")
+        scheduler_humidifier = sched.scheduler(time.time, time.sleep)
+        scheduler_humidifier.enter(0,1,humidifier.control_humidifier, (scheduler_humidifier,))
+        humidifier_thread = threading.Thread(target=run_scheduler, args=(scheduler_humidifier,))
+        humidifier_thread.start()
+        print("done activating humidifier")
     
     if activateCO2control:
         scheduler_co2 = sched.scheduler(time.time, time.sleep)
@@ -762,5 +773,61 @@ if __name__ == '__main__':
         scheduler_health_reporting.enter(2, 1, plantGeekBackend.sendHealthErrorsToBackend, (scheduler_health_reporting, systemHealth,))
         health_reporting_thread = threading.Thread(target=run_scheduler, args=(scheduler_health_reporting,))
         health_reporting_thread.start()
+
+    @app.route('/getDeviceConfig')
+    def get_device_config():
+        try:
+            # Get the directory where the main config file is located
+            config_dir = os.path.dirname(DEVICE_CONFIG_FILE)
+            # Construct path to device setup config
+            config_path = os.path.join(config_dir, 'device_setup.json')
+            
+            if not os.path.exists(config_path):
+                print(f"Config file not found at: {config_path}")  # Debug print
+                return jsonify({'error': 'Config file not found'}), 404
+            
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                return jsonify(config)
+            
+        except Exception as e:
+            print(f"Error reading device config: {e}")  # Debug print
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/saveDeviceAssignment', methods=['POST'])
+    def save_device_assignment():
+        data = request.json
+        friendly_name = data.get('friendly_name')
+        device_type = data.get('device_type')
+        
+        try:
+            config_dir = os.path.dirname(DEVICE_CONFIG_FILE)
+            config_path = os.path.join(config_dir, 'device_setup.json')
+            
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                
+            # Remove existing assignment if any
+            for device_type_key in list(config['devices'].keys()):
+                if config['devices'][device_type_key]['friendly_name'] == friendly_name:
+                    del config['devices'][device_type_key]
+            
+            # Add new assignment if device_type is not empty
+            if device_type:
+                config['devices'][device_type] = {
+                    'friendly_name': friendly_name,
+                    'description': f"{device_type.lower()} socket"
+                }
+                
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=4)
+            
+            # Reload MQTT interface device configuration
+            mqtt_interface.reload_device_config()
+            
+            return jsonify({'success': True})
+        except Exception as e:
+            print(f"Error saving device assignment: {e}")
+            return jsonify({'success': False, 'error': str(e)})
 
     app.run(debug=False, host='0.0.0.0')

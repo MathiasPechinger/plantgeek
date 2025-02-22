@@ -4,6 +4,7 @@ import time
 import requests
 import sched
 import threading
+import os
 
 from enum import Enum
 
@@ -50,13 +51,21 @@ class MQTT_Interface:
         self.availabiltyCheckCounter = 0
         self.scheduler = sched.scheduler(time.time, time.sleep)
         self.start_mqtt_loop()
-        self.lightSocket = SocketDevice(DeviceType.LIGHT)
-        self.fridgeSocket = SocketDevice(DeviceType.FRIDGE)
-        self.co2Socket = SocketDevice(DeviceType.CO2)
-        self.heater = SocketDevice(DeviceType.HEATER)
+        
+        # Load device configuration before creating socket devices
+        self.device_config = self.load_device_config()
+        
+        # Create socket devices with configured friendly names
+        self.lightSocket = self.create_socket_device(DeviceType.LIGHT)
+        self.fridgeSocket = self.create_socket_device(DeviceType.FRIDGE)
+        self.co2Socket = self.create_socket_device(DeviceType.CO2)
+        self.heater = self.create_socket_device(DeviceType.HEATER)
         self.devices = [self.lightSocket, self.fridgeSocket, self.co2Socket, self.heater]
         self.initDone = False
         self.devicesHealthy = False
+        
+        # Add a list to store all discovered devices
+        self.discovered_devices = []
 
     def start_mqtt_loop(self):
         mqtt_thread = threading.Thread(target=self.client.loop_forever)
@@ -87,58 +96,31 @@ class MQTT_Interface:
         try:
             # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
             
-            
             if msg.topic == "zigbee2mqtt/bridge/devices":
-                # print("Received devices list from bridge")
                 payload = msg.payload.decode()
                 devices = json.loads(payload)
                 
-                # Exclude coordinator from the list
-                filtered_devices = [device for device in devices if device['type'] != 'Coordinator']
+                # Store all non-coordinator devices
+                # Show all devices even if the are not available
+                for device in devices:
+                    if device['type'] != 'Coordinator':
+                        device_info = {
+                            'friendly_name': device.get('friendly_name', ''),
+                            'ieee_address': device.get('ieee_address', ''),
+                            'type': device.get('type', ''),
+                            'model': device.get('model', ''),
+                            'manufacturer': device.get('manufacturer', ''),
+                            'description': device.get('description', '')
+                        }
+                        # append if friendly name is not already in list
+                        if device_info['friendly_name'] not in [d['friendly_name'] for d in self.discovered_devices]:
+                            self.discovered_devices.append(device_info) 
 
-                # Get the number of devices excluding the coordinator
-                device_count = len(filtered_devices)
-                # print(f"Number of devices (excluding coordinator): {device_count}")
-
-                iter = 0
-
-                # Process the list of filtered devices
-                for device in filtered_devices:
-                    if iter >= device_count:
-                        break
-                    else:
-                        # print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
-                        self.devices[iter].friendly_name = device['ieee_address']
-                        iter += 1
-                    
-                    
-
+                        
+                # Verify that configured devices exist in discovered devices
+                self.verify_configured_devices()
                 
-                
-                # iter = 0
-                # for device in devices:
-                #     print(f"Device: {device['friendly_name']}, IEEE Address: {device['ieee_address']}")
-                #     self.devices[iter].friendly_name = device['ieee_address']
-                #     if iter >= 3:
-                #         break # implment longer list (todo)
-                #     iter += 1
 
-            
-            # Availability messages
-            if "availability" in msg.topic:
-                device_name = msg.topic.split('/')[1]
-                status = msg.payload.decode()
-                if status == "online":
-                    statusBool = True
-                else:
-                    statusBool = False
-                for device in self.devices:
-                    if device.friendly_name == device_name:
-                        # THIS DOES NOT WORK, I DONT KNOW WHY
-                        # THE MQTT BACKEND DOES NOT GIVE THE CORRECT AVAILABILITY STATUS
-                        # device.availability = statusBool
-                        # print(f"Device: {device.friendly_name}, Availability: {device.availability}")
-                        break
             else:
                 # process other messages
                 # my sockets do not attach the "/state" so i have to check for the device name
@@ -179,6 +161,9 @@ class MQTT_Interface:
         
     def getDevices (self):
         return self.devices
+    
+    def getDiscoveredDevices(self):
+        return self.discovered_devices
         
     def getDeviceState(self, friendly_name):
         for device in self.devices:
@@ -192,88 +177,58 @@ class MQTT_Interface:
             if device.friendly_name == friendly_name:
                 current_time = time.time()
                 if device.internalLastSeen is not None:
-                    timeDiffrence = current_time - device.internalLastSeen
-                    # print("Time diffrence: ", timeDiffrence)
-                    if device.internalLastSeen is not None and timeDiffrence > TIMEOUT_THRESHOLD:
-                        device.availability = False
-                    else:
-                        device.availability = True
-                    # print("Device: ", device.friendly_name, "Availability: ", device.availability)
+                    time_difference = current_time - device.internalLastSeen
+                    device.availability = time_difference <= TIMEOUT_THRESHOLD
                 else:
                     device.availability = False
-                    
-                # print("Device: ", device.friendly_name, "Availability: ", device.availability)
+
+                # Update discovered device availability
+                for discovered_device in self.discovered_devices:
+                    if discovered_device['friendly_name'] == friendly_name:
+                        discovered_device['available'] = device.availability
+                        break
+
         return None
     
-    def setDeviceAutoOffCountdownSocketA1Z(self, friendly_name, countdown):
-        TOPIC = f"zigbee2mqtt/{friendly_name}/set"
-        payload = '{"countdown":' + countdown + '}'        
-        self.publish(TOPIC, payload)
-        return None
-    
-    def removeDevice(self, friendly_name):
-        print("trying_to_remove_device")
-        for device in self.devices:
-            if device.friendly_name == friendly_name:
-                device.friendly_name = ""
-                device.availability = False
-                device.state = False
-                device.internalLastSeen = None
-                device.manualOverrideTimer = 0
-                device.manualOverrideActive = False
-                TOPIC = "zigbee2mqtt/bridge/request/device/remove"
-                payload = '{"id":"' + friendly_name + '", "force": true}'
-                self.publish(TOPIC, payload)
-                return True
-        return False
     
     def updateBridgeHealth(self):
         for device in self.devices:
             if not device.availability:
                 self.devicesHealthy = False
-            elif (self.devices[0].availability == True and 
-                  self.devices[1].availability == True and 
-                  self.devices[2].availability == True and 
-                  self.devices[3].availability == True):
+            elif (self.lightSocket.availability == True and 
+                  self.fridgeSocket.availability == True and 
+                  self.co2Socket.availability == True and 
+                  self.heater.availability == True):
                 self.devicesHealthy = True
                 
                     
     def mainloop(self, scheduler_mqtt, systemHealth):
         if self.availabiltyCheckCounter <= 0:
             # self.client.subscribe("zigbee2mqtt/+/availability")
-            self.client.subscribe(f"zigbee2mqtt/{self.devices[0].friendly_name}/availability")
-            self.client.subscribe(f"zigbee2mqtt/{self.devices[1].friendly_name}/availability")
-            self.client.subscribe(f"zigbee2mqtt/{self.devices[2].friendly_name}/availability")
-            self.client.subscribe(f"zigbee2mqtt/{self.devices[3].friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.lightSocket.friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.fridgeSocket.friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.co2Socket.friendly_name}/availability")
+            self.client.subscribe(f"zigbee2mqtt/{self.heater.friendly_name}/availability")
             # self.client.subscribe("zigbee2mqtt/bridge/devices") # get device information
             self.fetchZigbeeDevicesFromBridge()
             self.availabiltyCheckCounter = 2
         else:
             self.availabiltyCheckCounter -= 1
 
-        self.requestDeviceStateUpdate(self.devices[0].friendly_name)
-        self.requestDeviceStateUpdate(self.devices[1].friendly_name)
-        self.requestDeviceStateUpdate(self.devices[2].friendly_name)
-        self.requestDeviceStateUpdate(self.devices[3].friendly_name)
+        self.requestDeviceStateUpdate(self.lightSocket.friendly_name)
+        self.requestDeviceStateUpdate(self.fridgeSocket.friendly_name)
+        self.requestDeviceStateUpdate(self.co2Socket.friendly_name)
+        self.requestDeviceStateUpdate(self.heater.friendly_name)
         
-        self.checkDeviceAvailability(self.devices[0].friendly_name)
-        self.checkDeviceAvailability(self.devices[1].friendly_name)
-        self.checkDeviceAvailability(self.devices[2].friendly_name)
-        self.checkDeviceAvailability(self.devices[3].friendly_name)
-        
-        # add checks for this some other time
-        # self.publish('zigbee2mqtt/bridge/request/health_check', '')
-        # self.client.subscribe('zigbee2mqtt/bridge/response/health_check')
-        
-        # # Print last seen for all devices
-        # for device in self.devices:
-            # print(f"{device.friendly_name} - Last Seen: {device.internalLastSeen}")
+        self.checkDeviceAvailability(self.lightSocket.friendly_name)
+        self.checkDeviceAvailability(self.fridgeSocket.friendly_name)
+        self.checkDeviceAvailability(self.co2Socket.friendly_name)
+        self.checkDeviceAvailability(self.heater.friendly_name)
         
         if not self.initDone:
             self.fetchZigbeeDevicesFromBridge()
             self.initDone = True
         
-
         # Check if manual override is active
         for device in self.devices:
             if device.manualOverrideTimer > 0:
@@ -286,25 +241,25 @@ class MQTT_Interface:
         self.updateBridgeHealth()
         
         if not systemHealth.systemHealthy:
-            self.switch_off(self.devices[0].friendly_name)
-            self.switch_off(self.devices[1].friendly_name)
-            self.switch_off(self.devices[2].friendly_name)
-            self.switch_off(self.devices[3].friendly_name)
+            self.switch_off(self.lightSocket.friendly_name)
+            self.switch_off(self.fridgeSocket.friendly_name)
+            self.switch_off(self.co2Socket.friendly_name)
+            self.switch_off(self.heater.friendly_name)
             
         if systemHealth.systemOverheated:
-            self.switch_off(self.devices[0].friendly_name)
-            self.switch_off(self.devices[3].friendly_name)
+            self.switch_off(self.lightSocket.friendly_name)
+            self.switch_off(self.heater.friendly_name)
         
         mqttInterfaceDebugging = False
         if (mqttInterfaceDebugging):
             print("--------------------------------------------------")
             print("Devices healthy: ", self.devicesHealthy)
             print("System oveheated: ", systemHealth.systemOverheated)
-            print("Devices availability: ", self.devices[0].availability, self.devices[1].availability, self.devices[2].availability, self.devices[3].availability)
-            print("Devices state: ", self.devices[0].state, self.devices[1].state, self.devices[2].state , self.devices[3].state)
-            print("Devices manual override: ", self.devices[0].manualOverrideActive, self.devices[1].manualOverrideActive, self.devices[2].manualOverrideActive, self.devices[3].manualOverrideActive)
-            print("Devices manual override timer: ", self.devices[0].manualOverrideTimer, self.devices[1].manualOverrideTimer, self.devices[2].manualOverrideTimer, self.devices[3].manualOverrideTimer)
-            print("Devices friendly name: ", self.devices[0].friendly_name, self.devices[1].friendly_name, self.devices[2].friendly_name, self.devices[3].friendly_name)
+            print("Devices availability: ", self.lightSocket.availability, self.fridgeSocket.availability, self.co2Socket.availability, self.heater.availability)
+            print("Devices state: ", self.lightSocket.state, self.fridgeSocket.state, self.co2Socket.state , self.heater.state)
+            print("Devices manual override: ", self.lightSocket.manualOverrideActive, self.fridgeSocket.manualOverrideActive, self.co2Socket.manualOverrideActive, self.heater.manualOverrideActive)
+            print("Devices manual override timer: ", self.lightSocket.manualOverrideTimer, self.fridgeSocket.manualOverrideTimer, self.co2Socket.manualOverrideTimer, self.heater.manualOverrideTimer)
+            print("Devices friendly name: ", self.lightSocket.friendly_name, self.fridgeSocket.friendly_name, self.co2Socket.friendly_name, self.heater.friendly_name)
             print("--------------------------------------------------")
         
         scheduler_mqtt.enter(1, 1, self.mainloop, (scheduler_mqtt, systemHealth,))
@@ -326,8 +281,16 @@ class MQTT_Interface:
             self.client.publish(TOPIC, payload)
 
     def switch_on(self, ieee_address):
+        
+        
+        on_time = "60"
+        off_wait_time = "10"
+        
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
-        payload = '{"state": "ON"}'
+        # payload = '{"state": "ON", "on_time": 10, "off_wait_time": 10}' #  on_time prevents sleeping error if system is not healthy
+        payload = '{"state": "ON", "on_time":' + on_time + ', "off_wait_time":' + off_wait_time + '}' #  on_time prevents sleeping error if system is not healthy
+       
+       
         deviceFound = False
         for device in self.devices:
             if device.friendly_name == ieee_address:
@@ -337,7 +300,8 @@ class MQTT_Interface:
                 self.client.publish(TOPIC, payload)
                 deviceFound = True
         if not deviceFound:
-            print("ERROR: Device not found")
+            self.client.publish(TOPIC, payload)
+            print("WARN: Device not assigned or not found")
 
     def switch_off(self, ieee_address):
         TOPIC = f"zigbee2mqtt/{ieee_address}/set"
@@ -351,57 +315,58 @@ class MQTT_Interface:
                 self.client.publish(TOPIC, payload)
                 deviceFound = True
         if not deviceFound:
-            print("ERROR: Device not found")
+            self.client.publish(TOPIC, payload)
+            print("WARN: Device not assigned or not found")
 
     def setFridgeState(self, state):
-        if self.devices[1].friendly_name == "":
+        if self.fridgeSocket.friendly_name == "":
             # No light socket found, intializing
             # print("No fridge socket found")
             return False
         else:
-            if self.devices[1].manualOverrideActive:
+            if self.fridgeSocket.manualOverrideActive:
                 # print("Fridge is in manual override mode")
                 pass
             else:
-                self.switchLedvanceSocket_4058075729261(self.devices[1].friendly_name, state, "60", "10")
+                self.switchLedvanceSocket_4058075729261(self.fridgeSocket.friendly_name, state, "60", "10")
             return True
         
     def setHeaterState(self, state):
-        if self.devices[3].friendly_name == "":
+        if self.heater.friendly_name == "":
             # No light socket found, intializing
             print("No heater socket found")
             return False
         else:
-            if self.devices[3].manualOverrideActive:
+            if self.heater.manualOverrideActive:
                 # print("Heater is in manual override mode")
                 pass
             else:
-                self.switchLedvanceSocket_4058075729261(self.devices[3].friendly_name, state, "60", "10")
+                self.switchLedvanceSocket_4058075729261(self.heater.friendly_name, state, "60", "10")
             return True
         
     def getHeaterState(self):
-        return self.devices[3].state
+        return self.heater.state
 
     def getFridgeState(self):
-        return self.devices[1].state
+        return self.fridgeSocket.state
     
     def getCO2State(self):
-        return self.devices[2].state
+        return self.co2Socket.state
     
     def setCO2State(self, state):
-        if self.devices[2].friendly_name == "":
+        if self.co2Socket.friendly_name == "":
             # print("No co2 socket found")
             return False
         else:
-            if self.devices[2].manualOverrideActive:
+            if self.co2Socket.manualOverrideActive:
                 # print("CO2 is in manual override mode")
                 pass
             else:
-                # TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
+                # TOPIC = f"zigbee2mqtt/{self.co2Socket.friendly_name}/set"
                 # payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
                 # self.client.publish(TOPIC, payload)
-                # self.devices[2].state = state
-                self.switchLedvanceSocket_4058075729261(self.devices[2].friendly_name, state, "60", "10")
+                # self.co2Socket.state = state
+                self.switchLedvanceSocket_4058075729261(self.co2Socket.friendly_name, state, "60", "10")
             return True
         
     # Source: https://www.zigbee2mqtt.io/devices/4058075729261.html
@@ -414,7 +379,7 @@ class MQTT_Interface:
     # {"state" : "ON", "on_time": 300, "off_wait_time": 120}   
     
     def switchLedvanceSocket_4058075729261(self, friendly_name, state, on_time, off_wait_time):
-        # TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
+        # TOPIC = f"zigbee2mqtt/{self.co2Socket.friendly_name}/set"
         # payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
         
         
@@ -430,7 +395,7 @@ class MQTT_Interface:
         self.client.publish(TOPIC, payload)
         
     def switchNousSocket_A1Z(self, friendly_name, state, off_wait_time):
-        # TOPIC = f"zigbee2mqtt/{self.devices[2].friendly_name}/set"
+        # TOPIC = f"zigbee2mqtt/{self.co2Socket.friendly_name}/set"
         # payload = '{"state": "ON"}' if state else '{"state": "OFF"}'
         TOPIC = f"zigbee2mqtt/{friendly_name}/set"
         if state:
@@ -443,20 +408,70 @@ class MQTT_Interface:
         # self.setDeviceAutoOffCountdownSocketA1Z(friendly_name, off_wait_time)
 
     def getLightState(self):
-        return self.devices[0].state
+        return self.lightSocket.state
 
     def setLightState(self, state):
-        if self.devices[0].friendly_name == "":
+        if self.lightSocket.friendly_name == "":
             # No light socket found, intializing
             # print("No light socket found")
             return False
         else:
-            if self.devices[0].manualOverrideActive:
-                print("Light is in manual override mode")
+            if self.lightSocket.manualOverrideActive:
+                print("System Startup/Manual Override")
                 pass
             else:
-                self.switchLedvanceSocket_4058075729261(self.devices[0].friendly_name, state, "60", "10")
+                self.switchLedvanceSocket_4058075729261(self.lightSocket.friendly_name, state, "60", "10")
             return True
+
+    def load_device_config(self):
+        try:
+            if not 'TESTING' in os.environ:
+                config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'device_setup.json')
+            else:
+                config_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_configs', 'device_setup.json')
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                return config['devices']
+        except Exception as e:
+            print(f"Error loading device configuration: {e}")
+            return {}
+            
+    def create_socket_device(self, device_type: DeviceType) -> SocketDevice:
+        device = SocketDevice(device_type)
+        try:
+            # Get friendly name from config
+            friendly_name = self.device_config[device_type.name]['friendly_name']
+            device.friendly_name = friendly_name
+        except KeyError:
+            print(f"Warning: No configuration found for {device_type.name}")
+            device.friendly_name = ""
+        return device
+
+    def verify_configured_devices(self):
+        discovered_addresses = [device['ieee_address'] for device in self.discovered_devices]
+        
+        for device in self.devices:
+            if device.friendly_name:
+                if device.friendly_name not in discovered_addresses:
+                    print(f"Warning: Configured device {device.device_type.name} "
+                          f"with address {device.friendly_name} not found in network")
+
+    def reload_device_config(self):
+        # Load new device configuration
+        self.device_config = self.load_device_config()
+        
+        # Update friendly names for existing socket devices
+        for device in self.devices:
+            device_type = device.device_type.name  # Get the enum name (LIGHT, FRIDGE, etc.)
+            if device_type in self.device_config:
+                device.friendly_name = self.device_config[device_type]['friendly_name']
+            else:
+                device.friendly_name = ""
+                device.availability = False
+                device.state = False
+                device.internalLastSeen = None
+                device.manualOverrideTimer = 0
+                device.manualOverrideActive = False
 
     # def get_devices(self):
     #     return self.devices

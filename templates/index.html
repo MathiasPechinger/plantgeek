@@ -150,8 +150,9 @@
                 <div class="card">
                     <div class="card-header">Zigbee Devices</div>
                     <div class="card-body">
-                        <button onclick="zigbeePairing(true)" class="btn btn-success">Enable Pairing</button>
-                        <button onclick="zigbeePairing(false)" class="btn btn-warning">Disable Pairing</button>
+                        <!-- Disabled paired in plantgeek frontend -> used zigbee2mqtt bridge frontend instead -->
+                        <!-- <button onclick="zigbeePairing(true)" class="btn btn-success">Enable Pairing</button>
+                        <button onclick="zigbeePairing(false)" class="btn btn-warning">Disable Pairing</button> -->
                         <div class="mt-3">
                             <ul id="dynamic-list" class="list-group"></ul>
                         </div>
@@ -207,22 +208,7 @@
                     <div class="card-header">System Configuration</div>
                     <div class="card-body">
                         <form id="configForm" class="row g-3">
-                            <!-- API Configuration -->
-                            <div class="col-md-6">
-                                <h5 class="mb-3">API Configuration</h5>
-                                <div class="mb-3">
-                                    <label for="api_key" class="form-label">API Key</label>
-                                    <input type="text" class="form-control" id="api_key" name="api_key" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">User ID</label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="device_name" class="form-label">Device Name</label>
-                                    <input type="text" class="form-control" id="device_name" name="device_name" required>
-                                </div>
-                            </div>
+
 
                             <!-- Light Control -->
                             <div class="col-md-6">
@@ -280,15 +266,53 @@
                                 </div>
                             </div>
 
-                            <!-- Fridge Control -->
+                            <!-- API Configuration -->
                             <div class="col-md-6">
-                                <h5 class="mb-3">Fridge Control</h5>
+                                <h5 class="mb-3">API Configuration</h5>
+                                <div class="mb-3">
+                                    <label for="api_key" class="form-label">API Key</label>
+                                    <input type="text" class="form-control" id="api_key" name="api_key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">User ID</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="device_name" class="form-label">Device Name</label>
+                                    <input type="text" class="form-control" id="device_name" name="device_name" required>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="alert alert-success bg-light border-success d-flex align-items-center mb-2" role="alert">
+                                        <i class="bi bi-thermometer-half me-2 text-success"></i>
+                                        <div>
+                                            This feature must be activated in the backend is in a closed beta state. It grants access to the iOS and Android app.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <!-- Control Setting -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Control Setting</h5>
                                 <div class="mb-3">
                                     <label for="fridge_control_mode" class="form-label">Control Mode</label>
                                     <select class="form-control" id="fridge_control_mode" name="fridge_control_mode" required>
                                         <option value="TEMPERATURE_CONTROL">Temperature Control</option>
                                         <option value="HUMIDITY_CONTROL">Humidity Control</option>
                                     </select>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="alert alert-success bg-light border-success d-flex align-items-center mb-2" role="alert">
+                                        <div>
+                                            <strong class="text-success">Temperature Control:</strong> 
+                                            Focus on temperature environment control value, can cause humidity loss
+                                            <br>
+                                            <strong class="text-success">Humidity Control:</strong> 
+                                            Focus on humidity environment control value, can cause overheating
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
