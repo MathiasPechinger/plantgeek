@@ -24,6 +24,7 @@ from include.health_monitoring import HealthMonitor
 # from include.camera_recorder import CameraRecorder
 from include.picamera_recorder import CameraRecorder
 from include.plantgeek_backend_connector import PlantGeekBackendConnector
+from include.humidifier_controller import Humidifier
 
 import faulthandler
 import argparse
@@ -136,7 +137,9 @@ def initConfigOnStartup():
     fridge.set_temperature_hysteresis(config['TemperatureControl']['hysteresis'])
     
     fridge.set_control_humidity(config['HumidityControl']['targetHumidity'])
+    humidifier.set_control_humidity(config['HumidityControl']['targetHumidity'])
     fridge.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+    humidifier.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
     if 'FridgeControl' in config and 'controlMode' in config['FridgeControl']:
         fridge.set_control_mode(ControlMode[config['FridgeControl']['controlMode']])
     
@@ -196,10 +199,13 @@ def save_config():
     if 'target_humidity' in data:
         config['HumidityControl']['targetHumidity'] = data['target_humidity']
         fridge.set_control_humidity(data['target_humidity'])
+        humidifier.set_control_humidity(config['HumidityControl']['targetHumidity'])
     
     if 'humidity_hysteresis' in data:
         config['HumidityControl']['hysteresis'] = data['humidity_hysteresis']
         fridge.set_humidity_hysteresis(data['humidity_hysteresis'])
+        humidifier.set_humidity_hysteresis(config['HumidityControl']['hysteresis'])
+
 
     # Save the updated configuration back to the file
     with open(CONFIG_FILE, 'w') as config_file:
@@ -638,22 +644,6 @@ if __name__ == '__main__':
     plantGeekBackendInUse = config['PlanGeekBackend']['plantGeekBackendInUse']
     activateCO2control = config['CO2Control']['activateCO2control']
     activateMQTTinterface = config['MQTTInterface']['activateMQTTinterface']
-    
-    # Print the values to verify
-    # print(f"Plant Geek Backend In Use: {plantGeekBackendInUse}")
-    # print(f"Activate CO2 Control: {activateCO2control}")
-    # print(f"Activate MQTT Interface: {activateMQTTinterface}")
-        
-    # # Using PlanGeekBackend
-    # plantGeekBackendInUse = True
-    
-    # # Using CO2 control
-    # activateCO2control = True
-    
-    # # Using MQTT interface
-    # activateMQTTinterface = True
-        
-        
 
     scheduler_sensorCheck = sched.scheduler(time.time, time.sleep)
     scheduler_databaseCheck = sched.scheduler(time.time, time.sleep)
@@ -685,6 +675,12 @@ if __name__ == '__main__':
     fridge = Fridge(db_config) 
     heater = Heater(db_config)
     light = Light(db_config)
+    
+    activateHumidifier = True
+    
+    if activateHumidifier:
+        humidifier = Humidifier(db_config)
+        
     if activateCO2control:
         co2 = CO2()
 
@@ -714,6 +710,13 @@ if __name__ == '__main__':
     if enable_camera:
         scheduler_camera.enter(1, 1, camera.record, (scheduler_camera, mqtt_interface,))
 
+    if activateHumidifier:
+        print("activating humidifier")
+        scheduler_humidifier = sched.scheduler(time.time, time.sleep)
+        scheduler_humidifier.enter(0,1,humidifier.control_humidifier, (scheduler_humidifier,))
+        humidifier_thread = threading.Thread(target=run_scheduler, args=(scheduler_humidifier,))
+        humidifier_thread.start()
+        print("done activating humidifier")
     
     if activateCO2control:
         scheduler_co2 = sched.scheduler(time.time, time.sleep)
