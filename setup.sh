@@ -308,6 +308,10 @@ pip install -r requirements.txt
 
 pip install --upgrade numpy simplejpeg # fixes an issue with picam
 
+# fix new bug in pi5 bookworm OS
+# https://github.com/raspberrypi/picamera2/issues/1211
+pip install --force-reinstall simplejpeg
+
 cp config/config.json.template config/config.json
 cp config/device_setup.json.template config/device_setup.json
 

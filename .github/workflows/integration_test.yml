@@ -18,6 +18,12 @@ jobs:
         chmod +x setup.sh
         ./setup.sh --ci
 
+    - name: Run app execution test
+      run: |
+        source venv/bin/activate
+        ./tests/test_app_py.sh
+
+
     - name: Run Zigbee integration tests
       run: |
         source venv/bin/activate
