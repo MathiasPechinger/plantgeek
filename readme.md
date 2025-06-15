@@ -12,6 +12,12 @@ You can support the project:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-%23FFDD00.svg?&logo=buy-me-a-coffee&style=flat-square)](https://www.buymeacoffee.com/plantgeek)
 
+## 📚 Documentation
+
+- **[📖 Complete Manual](docs/manual.md)** - Comprehensive DIY guide with safety procedures, FMEA analysis, and detailed setup instructions
+- **[🚀 Quick Start Video](https://youtu.be/ruVc4RdbNsQ)** - Video walkthrough of the installation process
+- **[🔧 Parts List](https://plantgeek.de/part-list/)** - Updated component list with recommendations
+
 
 <img src="images/basil_sample.jpeg" alt="Raspberry Pi Image Installation" style="height:35%; width:35%;">
 
@@ -29,7 +35,9 @@ You can support the project:
 
 
 
-## Installation
+## Quick Installation
+
+> 📖 **For comprehensive setup instructions, safety procedures, and detailed technical documentation, see our [Complete Documentation](docs/README.md)**
 
 ### Installing the Raspberry Pi Image
 Follow these instructions to install a basic Raspberry Pi image:

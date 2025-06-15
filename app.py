@@ -540,13 +540,28 @@ def switchPowerSocket():
 
 @app.route('/getZigbeeDevices', methods=['POST'])
 def getZigbeeDevices():
-    discovered_devices = mqtt_interface.getDiscoveredDevices()
-    # Return friendly names and availability status
-    device_info = [{
-        'friendly_name': device['friendly_name'],
-        'availability': device['available'] 
-    } for device in discovered_devices]
-    return jsonify(device_info)
+    try:
+        discovered_devices = mqtt_interface.getDiscoveredDevices()
+        print(f"[DEBUG] Raw discovered devices: {discovered_devices}")
+        
+        # Return friendly names and availability status
+        device_info = []
+        for device in discovered_devices:
+            print(f"[DEBUG] Processing device: {device}")
+            # Check if the device has the expected keys
+            device_entry = {
+                'friendly_name': device.get('friendly_name', 'Unknown'),
+                'availability': device.get('available', False)  # Use get() with default value
+            }
+            device_info.append(device_entry)
+            
+        print(f"[DEBUG] Final device info: {device_info}")
+        return jsonify(device_info)
+    except Exception as e:
+        print(f"[ERROR] Exception in getZigbeeDevices: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/removeZigbeeDevice', methods=['POST'])
 def removeZigbeeDevice():
